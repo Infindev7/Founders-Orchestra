@@ -9,11 +9,13 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@ai-sdk/google": "^3.0.82",
     "@auth/mongodb-adapter": "^3.11.2",
     "@base-ui/react": "^1.5.0",
+    "@langchain/core": "^1.1.49",
+    "@langchain/google-genai": "^2.1.31",
+    "@langchain/langgraph": "^1.4.2",
+    "@langchain/tavily": "^1.2.0",
     "@react-pdf/renderer": "^4.5.1",
-    "ai": "^6.0.206",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.40.0",

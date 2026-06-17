@@ -3,15 +3,8 @@
  * COMPONENT — Dashboard Sidebar
  * =============================================================================
  *
- * The left-side navigation panel in the dashboard.
- * Shows the project name and a list of all 6 agents with their status.
- * Clicking an agent navigates to its detail view.
- *
- * DESIGN:
- * - Dark glass morphism background
- * - Status dots: gray=idle, amber=running, green=completed, red=error
- * - Collapsible on mobile (hamburger menu)
- * - Animated agent status transitions
+ * Fixed 240px sidebar with logo, navigation sections, and agent status dots.
+ * Navigation items scroll to their respective dashboard sections.
  *
  * Owner: Frontend Lead (Team Member A)
  * =============================================================================
@@ -19,159 +12,131 @@
 
 "use client";
 
-import { useProjectStore, getAgentStatus } from "@/lib/store/project-store";
-import { AGENT_CONFIGS, ALL_AGENT_IDS } from "@/lib/agents/config";
 import { cn } from "@/lib/utils";
+import { useProjectStore, getAgentStatus } from "@/lib/store/project-store";
+import { ALL_AGENT_IDS } from "@/lib/agents/config";
 import {
-  Lightbulb,
-  TrendingUp,
-  ClipboardList,
-  Megaphone,
-  Blocks,
-  GitBranch,
+  Zap,
   LayoutDashboard,
-  PanelLeftClose,
-  PanelLeft,
-} from "lucide-react";
-import type { AgentId, AgentStatus } from "@/lib/types";
-
-// ── Map icon names (from config) to actual Lucide components ────────────────
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string; size?: number }>> = {
-  Lightbulb,
+  BarChart3,
+  Flag,
   TrendingUp,
-  ClipboardList,
-  Megaphone,
-  Blocks,
+  FileText,
+  Map,
+  Building2,
   GitBranch,
-};
+  Rocket,
+  Megaphone,
+} from "lucide-react";
+
+// ── Navigation structure ────────────────────────────────────────────────────
+const NAV_SECTIONS = [
+  {
+    label: "Overview",
+    items: [
+      { icon: LayoutDashboard, label: "Dashboard", sectionId: "orbit" },
+    ],
+  },
+  {
+    label: "Research",
+    items: [
+      { icon: BarChart3, label: "Market Analysis", sectionId: "market" },
+      { icon: Flag, label: "Competitors", sectionId: "competitors" },
+      { icon: TrendingUp, label: "Trends", sectionId: "market" },
+    ],
+  },
+  {
+    label: "Product",
+    items: [
+      { icon: FileText, label: "PRD", sectionId: "product" },
+      { icon: Map, label: "Roadmap", sectionId: "product" },
+      { icon: Building2, label: "Architecture", sectionId: "architecture" },
+    ],
+  },
+  {
+    label: "Execution",
+    items: [
+      { icon: GitBranch, label: "GitHub Issues", sectionId: "engineering" },
+      { icon: Rocket, label: "Sprint Plan", sectionId: "engineering" },
+      { icon: Megaphone, label: "Marketing", sectionId: "marketing" },
+    ],
+  },
+];
 
 // ── Status dot colors ───────────────────────────────────────────────────────
-const STATUS_STYLES: Record<AgentStatus, string> = {
-  idle: "bg-muted-foreground/30",
-  running: "bg-amber-500 animate-pulse",
-  completed: "bg-emerald-500",
-  error: "bg-red-500",
+const STATUS_COLORS: Record<string, string> = {
+  idle: "bg-fo-muted",
+  running: "bg-fo-amber fo-pulse",
+  completed: "bg-fo-emerald",
+  error: "bg-fo-rose",
 };
 
 export function Sidebar() {
-  // ── Get state from the store ────────────────────────────────────────────
   const agents = useProjectStore((s) => s.agents);
-  const selectedAgent = useProjectStore((s) => s.selectedAgent);
-  const selectAgent = useProjectStore((s) => s.selectAgent);
-  const sidebarCollapsed = useProjectStore((s) => s.sidebarCollapsed);
-  const toggleSidebar = useProjectStore((s) => s.toggleSidebar);
-  const input = useProjectStore((s) => s.input);
+  const activeSection = useProjectStore((s) => s.activeSection);
+  const setActiveSection = useProjectStore((s) => s.setActiveSection);
+
+  const handleNavClick = (sectionId: string) => {
+    setActiveSection(sectionId);
+    const el = document.getElementById(sectionId);
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
-    <aside
-      className={cn(
-        "flex flex-col border-r border-border bg-card transition-all duration-300",
-        sidebarCollapsed ? "w-16" : "w-64"
-      )}
-    >
-      {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        {!sidebarCollapsed && (
-          <div className="min-w-0">
-            <h2 className="text-sm font-semibold truncate">
-              {input?.startupName || "Founders Orchestra"}
-            </h2>
-            <p className="text-xs text-muted-foreground">Dashboard</p>
-          </div>
-        )}
-        <button
-          onClick={toggleSidebar}
-          className="p-1.5 rounded-md hover:bg-muted transition-colors"
-          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {sidebarCollapsed ? (
-            <PanelLeft size={18} />
-          ) : (
-            <PanelLeftClose size={18} />
-          )}
-        </button>
+    <aside className="w-[240px] min-h-screen bg-fo-surface border-r border-border flex flex-col py-6 fixed top-0 left-0 bottom-0 z-50">
+      {/* ── Logo ─────────────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2.5 px-5 pb-7 border-b border-border">
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-fo-indigo to-purple-500 flex items-center justify-center">
+          <Zap size={16} className="text-white" />
+        </div>
+        <span className="font-display text-lg font-bold tracking-tight">
+          Founder<span className="text-fo-indigo">OS</span>
+        </span>
       </div>
 
-      {/* ── Navigation ──────────────────────────────────────────────────── */}
-      <nav className="flex-1 p-2 space-y-1">
-        {/* Overview button */}
-        <button
-          onClick={() => selectAgent(null)}
-          className={cn(
-            "flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-sm transition-colors",
-            selectedAgent === null
-              ? "bg-primary text-primary-foreground"
-              : "hover:bg-muted text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <LayoutDashboard size={18} />
-          {!sidebarCollapsed && <span>Overview</span>}
-        </button>
-
-        {/* Divider */}
-        <div className="py-2">
-          {!sidebarCollapsed && (
-            <p className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Agents
-            </p>
-          )}
+      {/* ── Nav Sections ─────────────────────────────────────────────────── */}
+      {NAV_SECTIONS.map((section) => (
+        <div key={section.label} className="px-3 pt-5 pb-2">
+          <div className="text-[10px] font-semibold tracking-[1.2px] text-fo-muted uppercase px-2 mb-1.5">
+            {section.label}
+          </div>
+          {section.items.map((item) => {
+            const isActive = activeSection === item.sectionId;
+            return (
+              <button
+                key={item.label}
+                onClick={() => handleNavClick(item.sectionId)}
+                className={cn(
+                  "flex items-center gap-2.5 w-full rounded-lg px-2.5 py-2 text-[13.5px] font-medium transition-colors mb-0.5",
+                  isActive
+                    ? "bg-[rgba(99,102,241,.15)] text-fo-indigo"
+                    : "text-fo-sub hover:bg-fo-surface2 hover:text-fo-text"
+                )}
+              >
+                <item.icon size={18} />
+                {item.label}
+              </button>
+            );
+          })}
         </div>
+      ))}
 
-        {/* Agent buttons */}
-        {ALL_AGENT_IDS.map((agentId) => {
-          const config = AGENT_CONFIGS[agentId];
-          const status = getAgentStatus(agents, agentId);
-          const IconComponent = ICON_MAP[config.icon];
-          const isSelected = selectedAgent === agentId;
-
-          return (
-            <button
-              key={agentId}
-              onClick={() => selectAgent(agentId)}
-              className={cn(
-                "flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-sm transition-colors",
-                isSelected
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted text-muted-foreground hover:text-foreground"
-              )}
-              title={sidebarCollapsed ? config.name : undefined}
-            >
-              {/* Agent icon */}
-              {IconComponent && (
-                <IconComponent
-                  size={18}
-                  className={cn(!isSelected && config.color)}
-                />
-              )}
-
-              {/* Agent name + status (hidden when collapsed) */}
-              {!sidebarCollapsed && (
-                <>
-                  <span className="flex-1 text-left truncate">
-                    {config.name}
-                  </span>
-                  {/* Status dot */}
-                  <span
-                    className={cn(
-                      "w-2 h-2 rounded-full flex-shrink-0",
-                      STATUS_STYLES[status]
-                    )}
-                  />
-                </>
-              )}
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* ── Footer ──────────────────────────────────────────────────────── */}
-      {!sidebarCollapsed && (
-        <div className="p-4 border-t border-border">
-          <p className="text-xs text-muted-foreground text-center">
-            Founders Orchestra v0.1
-          </p>
+      {/* ── Bottom: Agent Status Dots ─────────────────────────────────────── */}
+      <div className="mt-auto px-5 pt-4 border-t border-border">
+        <div className="text-xs text-fo-sub mb-2.5">Agent activity</div>
+        <div className="flex gap-1.5 flex-wrap">
+          {ALL_AGENT_IDS.map((agentId) => {
+            const status = getAgentStatus(agents, agentId);
+            return (
+              <div
+                key={agentId}
+                className={cn("w-2 h-2 rounded-full", STATUS_COLORS[status])}
+                title={agentId}
+              />
+            );
+          })}
         </div>
-      )}
+      </div>
     </aside>
   );
 }

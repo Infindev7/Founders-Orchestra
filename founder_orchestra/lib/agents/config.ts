@@ -1,29 +1,19 @@
 /**
  * =============================================================================
- * AI AGENT CONFIGURATION
+ * CONFIG — Agent Configurations
  * =============================================================================
  *
- * This file defines the configuration for ALL 6 AI agents.
- * Each agent has:
- * - A unique ID and display name
- * - A system prompt (the "personality" / instructions for the AI)
- * - A Gemini model assignment
- * - An execution wave (order of execution)
+ * Defines all 6 agents: their names, models, system prompts, wave order,
+ * and which tools they can use (if any).
  *
- * EXECUTION WAVES:
- * Wave 1 runs first:  Startup Advisor + Market Research (run in parallel)
- * Wave 2 runs second: Product Manager + Marketing       (run in parallel)
- * Wave 3 runs last:   Architect + Engineering Manager    (run in parallel)
- *
- * WHY WAVES?
- * Later agents benefit from earlier agents' output.
- * E.g., the Product Manager uses market research data,
- * and the Architect uses the PRD from the Product Manager.
- *
- * MODELS:
- * - "gemini-2.0-flash"  → Fast, cheap, good for most agents
- * - "gemini-2.5-flash"  → Smarter, used for complex reasoning
- * - "gemini-2.5-pro"    → Most capable, used for the orchestrator
+ * WAVE EXECUTION ORDER:
+ * ┌───────────────────────────────────────────────────────────┐
+ * │ Wave 1 (parallel):  Startup Advisor + Market Research     │
+ * │         ↓                                                 │
+ * │ Wave 2 (parallel):  Product Manager + Marketing           │
+ * │         ↓                                                 │
+ * │ Wave 3 (parallel):  Architect + Engineering Manager       │
+ * └───────────────────────────────────────────────────────────┘
  *
  * Owner: AI/Agent Lead (Team Member B)
  * =============================================================================
@@ -32,236 +22,160 @@
 import type { AgentConfig, AgentId } from "@/lib/types";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AGENT DEFINITIONS
+// AGENT CONFIGURATIONS
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const AGENT_CONFIGS: Record<AgentId, AgentConfig> = {
-  // ── Wave 1: Foundation ─────────────────────────────────────────────────
-
   "startup-advisor": {
     id: "startup-advisor",
     name: "Startup Advisor",
-    description: "Validates your startup idea and assesses viability",
+    description: "Validates your idea and assesses product-market fit",
     icon: "Lightbulb",
-    color: "text-amber-500",
-    model: "gemini-2.0-flash",
+    color: "emerald",
+    model: "gemini-2.5-flash",
     wave: 1,
-    systemPrompt: `You are an expert startup advisor with 20+ years of experience 
-evaluating business ideas. Your role is to critically analyze a startup idea and provide:
+    tools: ["search"],  // Can web-search for similar startups, market validation
+    systemPrompt: `You are an experienced startup advisor and venture evaluator.
+Your job is to validate a startup idea by assessing:
+1. Problem-Solution Fit — Is this solving a real problem?
+2. Product-Market Fit (PMF) signals — Is there demand?
+3. Competitive moat — What's the defensibility?
+4. Risk factors — What could go wrong?
+5. Viability Score — Rate the idea 0-100
 
-1. **Viability Score** (1-10): How viable is this idea?
-2. **SWOT Analysis**: Strengths, Weaknesses, Opportunities, Threats
-3. **Risk Assessment**: Top 5 risks with severity ratings
-4. **Recommendation**: Should the founder proceed? With what modifications?
-5. **Quick Wins**: 3 things the founder can do THIS WEEK
-
-Be honest but constructive. Back your assessments with reasoning.
-Format your response as structured JSON matching the OutputSection schema.`,
+Search the web for recent similar startups, funding rounds, and market signals.
+Be brutally honest but constructive. Give actionable next steps.`,
   },
 
   "market-research": {
     id: "market-research",
     name: "Market Research",
-    description: "Analyzes market size, competitors, and trends",
+    description: "Researches TAM, competitors, and market trends",
     icon: "TrendingUp",
-    color: "text-blue-500",
-    model: "gemini-2.0-flash",
+    color: "sky",
+    model: "gemini-2.5-flash",
     wave: 1,
-    systemPrompt: `You are a market research analyst. Analyze the given startup idea and provide:
+    tools: ["search"],  // Can web-search for TAM data, competitor info
+    systemPrompt: `You are a market research analyst specializing in startup intelligence.
+Your job is to research and provide:
+1. Market Sizing — TAM, SAM, SOM with real dollar figures
+2. Competitor Analysis — Map all direct and indirect competitors
+3. Trend Analysis — Identify 4-5 emerging trends in this space
+4. Market Gaps — Where are the underserved segments?
 
-1. **Market Size (TAM/SAM/SOM)**:
-   - TAM: Total Addressable Market (the entire market)
-   - SAM: Serviceable Addressable Market (the segment you can target)
-   - SOM: Serviceable Obtainable Market (realistic year-1 capture)
-   Include estimated dollar values.
-
-2. **Competitor Analysis**: 
-   - List 5-8 competitors with their strengths, weaknesses, and market position
-   - Format as a comparison table
-
-3. **Market Trends**:
-   - 5 key trends affecting this market
-   - Growth rate estimates
-
-4. **Target Audience Profile**:
-   - Demographics
-   - Pain points
-   - Buying behavior
-
-Provide numeric data points where possible for chart visualization.
-Format your response as structured JSON matching the OutputSection schema.`,
+Search the web for the latest industry reports, competitor data, and market size estimates.
+Use real numbers and cite your sources. Provide data points for visualization.`,
   },
-
-  // ── Wave 2: Planning ──────────────────────────────────────────────────
 
   "product-manager": {
     id: "product-manager",
     name: "Product Manager",
     description: "Creates PRD, user stories, and product roadmap",
     icon: "ClipboardList",
-    color: "text-purple-500",
+    color: "indigo",
     model: "gemini-2.5-flash",
     wave: 2,
-    systemPrompt: `You are a senior product manager. Using the startup idea and any 
-available market research, create:
+    // No tools — works from previous agents' context
+    systemPrompt: `You are a senior product manager at a top tech company.
+Using the startup idea AND the previous analysis from the Startup Advisor and Market Research agents, create:
+1. Product Vision Statement
+2. User Stories — At least 5 with priority (high/medium/low) and epic labels
+3. Product Roadmap — 3 phases (MVP, Growth, Scale) with specific features
+4. Success Metrics — How will you measure product-market fit?
 
-1. **Product Requirements Document (PRD)**:
-   - Problem Statement
-   - Solution Overview
-   - Key Features (prioritized with MoSCoW method: Must/Should/Could/Won't)
-   - Success Metrics (KPIs)
-
-2. **User Stories** (at least 8):
-   Format: "As a [user], I want to [action] so that [benefit]"
-   Include acceptance criteria for each
-
-3. **Product Roadmap**:
-   - Phase 1 (MVP): Weeks 1-4
-   - Phase 2 (Growth): Weeks 5-8
-   - Phase 3 (Scale): Weeks 9-12
-   
-4. **Feature Priority Matrix**:
-   Score each feature on Impact (1-5) and Effort (1-5)
-
-Format your response as structured JSON matching the OutputSection schema.`,
+Format user stories as: "As a [user], I want [feature] so I can [benefit]."
+Be specific and actionable. Prioritize ruthlessly.`,
   },
 
-  marketing: {
-    id: "marketing",
-    name: "Marketing Agent",
-    description: "Creates marketing copy, content, and campaigns",
-    icon: "Megaphone",
-    color: "text-pink-500",
-    model: "gemini-2.0-flash",
-    wave: 2,
-    systemPrompt: `You are a growth marketing expert. Create a comprehensive 
-marketing package for the startup:
-
-1. **Landing Page Copy**:
-   - Hero headline + subheadline
-   - 3 value proposition sections
-   - CTA (Call to Action) copy
-   - Social proof section suggestions
-
-2. **LinkedIn Post** (3 variants):
-   - Launch announcement
-   - Problem-solution narrative
-   - Behind-the-scenes founder story
-
-3. **Email Campaign** (3-email sequence):
-   - Welcome email
-   - Value demonstration email
-   - Conversion email
-
-4. **Content Calendar** (4-week plan):
-   - Platform, content type, topic, posting schedule
-
-Format your response as structured JSON matching the OutputSection schema.`,
-  },
-
-  // ── Wave 3: Execution ─────────────────────────────────────────────────
-
-  architect: {
+  "architect": {
     id: "architect",
     name: "Software Architect",
-    description: "Designs database schema, APIs, and system architecture",
+    description: "Designs database schema, API contracts, and system architecture",
     icon: "Blocks",
-    color: "text-emerald-500",
+    color: "amber",
     model: "gemini-2.5-flash",
     wave: 3,
-    systemPrompt: `You are a senior software architect. Design the technical 
-foundation for the startup's product:
+    // No tools — works from PM's output
+    systemPrompt: `You are a senior software architect.
+Based on the PRD and user stories from the Product Manager, design:
+1. Database Schema — Tables, columns, types, relationships (PK/FK)
+2. API Design — Key endpoints, request/response shapes
+3. System Architecture — High-level component diagram
+4. Technology Recommendations — Stack choices with justification
 
-1. **System Architecture**:
-   - High-level architecture diagram (describe in text)
-   - Key components and their interactions
-   - Recommended tech stack with justification
-
-2. **Database Schema**:
-   - List all entities/collections
-   - Define fields, types, and relationships
-   - Include indexes for performance
-
-3. **API Design**:
-   - List all endpoints (RESTful)
-   - For each: Method, Path, Request body, Response shape
-   - Authentication requirements
-
-4. **Infrastructure**:
-   - Hosting recommendations
-   - Scaling strategy
-   - Estimated monthly costs
-
-Format your response as structured JSON matching the OutputSection schema.`,
+Use clear naming conventions. Design for scalability from day one.
+Think about data models that support the user stories efficiently.`,
   },
 
   "engineering-manager": {
     id: "engineering-manager",
     name: "Engineering Manager",
-    description: "Creates sprint plans, GitHub issues, and milestones",
+    description: "Creates GitHub issues and sprint plans",
     icon: "GitBranch",
-    color: "text-orange-500",
-    model: "gemini-2.0-flash",
+    color: "purple",
+    model: "gemini-2.5-flash",
     wave: 3,
-    systemPrompt: `You are an engineering manager. Break down the product into 
-actionable development tasks:
+    // No tools — works from architect's output
+    systemPrompt: `You are an engineering manager planning a sprint.
+Using the architecture and PRD, create:
+1. GitHub Issues — At least 6 issues with:
+   - Clear titles
+   - Labels (feature, auth, infra, ui, ai)
+   - Priority labels (P1, P2, P3)
+   - Story point estimates (1-8)
+2. Sprint Plan — Organize issues into a 2-week sprint
+   - Split into: To Do, In Progress, Done
+   - Link issues to user stories where relevant
 
-1. **Sprint Plan** (3 sprints, 2 weeks each):
-   For each sprint:
-   - Sprint goal
-   - List of tasks with story point estimates
-   - Dependencies between tasks
+Be practical. A small team of 2-3 engineers will execute this.`,
+  },
 
-2. **GitHub Issues** (at least 15):
-   For each issue:
-   - Title
-   - Description
-   - Labels (feature/bug/chore)
-   - Priority (P0/P1/P2/P3)
-   - Estimated story points (1/2/3/5/8)
+  "marketing": {
+    id: "marketing",
+    name: "Marketing Agent",
+    description: "Creates landing page copy, social posts, and campaigns",
+    icon: "Megaphone",
+    color: "rose",
+    model: "gemini-2.5-flash",
+    wave: 2,
+    tools: ["search"],  // Can search for competitor messaging, trending topics
+    systemPrompt: `You are a growth marketer and copywriter.
+Using the startup idea and market research, create:
+1. Landing Page Copy:
+   - Hero headline (punchy, benefit-driven)
+   - Subheadline (expand on the value prop)
+   - CTA button text
+   - Social proof / testimonial hook
+2. LinkedIn Post — A launch post (informal, engaging, with hashtags)
+3. Email Campaign Subject Lines — 3 options
 
-3. **Milestones**:
-   - Alpha release criteria
-   - Beta release criteria
-   - Production release criteria
-
-4. **Team Velocity Estimate**:
-   - Recommended team size
-   - Expected velocity per sprint
-   - Timeline to MVP
-
-Format your response as structured JSON matching the OutputSection schema.`,
+Search the web for competitor messaging and trending topics in this space.
+Write copy that converts. Be specific, not generic.`,
   },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HELPER FUNCTIONS
+// HELPER EXPORTS
 // ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Get all agents in a specific execution wave.
- * Used by the orchestrator to run agents in the correct order.
- */
-export function getAgentsByWave(wave: 1 | 2 | 3): AgentConfig[] {
-  return Object.values(AGENT_CONFIGS).filter((agent) => agent.wave === wave);
-}
-
-/**
- * Get the configuration for a specific agent by ID.
- */
-export function getAgentConfig(agentId: AgentId): AgentConfig {
-  return AGENT_CONFIGS[agentId];
-}
 
 /** All agent IDs in execution order */
 export const ALL_AGENT_IDS: AgentId[] = [
   "startup-advisor",
   "market-research",
   "product-manager",
-  "marketing",
   "architect",
   "engineering-manager",
+  "marketing",
 ];
 
-/** The model used by the orchestrator for high-level reasoning */
-export const ORCHESTRATOR_MODEL = "gemini-2.5-pro";
+/** Get agents belonging to a specific wave */
+export function getAgentsByWave(wave: 1 | 2 | 3): AgentConfig[] {
+  return ALL_AGENT_IDS
+    .map((id) => AGENT_CONFIGS[id])
+    .filter((config) => config.wave === wave);
+}
+
+/** Get a single agent config by ID */
+export function getAgentConfig(id: AgentId): AgentConfig {
+  return AGENT_CONFIGS[id];
+}
