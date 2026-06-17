@@ -1,22 +1,33 @@
 /**
  * =============================================================================
- * STORE — Project State (Zustand)
+ * ZUSTAND STORE — Global Application State
  * =============================================================================
  *
- * Global state management for the entire app using Zustand.
- * Persists to localStorage so data survives page refreshes.
+ * This is the "central brain" of the frontend. It stores:
+ * - The current project data (startup input + agent outputs)
+ * - UI state (which panel is selected, sidebar state, etc.)
+ * - Actions (functions to update state)
  *
- * HOW ZUSTAND WORKS:
- * 1. Define your state shape + actions in the `create()` call
- * 2. Use `useProjectStore(selector)` in any component to read state
- * 3. Call actions to update state — React auto-re-renders
+ * WHAT IS ZUSTAND?
+ * Zustand is a tiny state management library for React.
+ * Think of it like a global variable that:
+ * - All components can read from
+ * - Only updates the components that actually use the changed data
+ * - Persists data to localStorage so it survives page refreshes
  *
- * USAGE EXAMPLES:
- *   const input = useProjectStore((s) => s.input);
- *   const setInput = useProjectStore((s) => s.setInput);
- *   setInput({ startupName: "FitCoach AI", idea: "..." });
+ * HOW TO USE IN A COMPONENT:
+ *   "use client";
+ *   import { useProjectStore } from "@/lib/store/project-store";
  *
- * Owner: Shared (all team members use this store)
+ *   function MyComponent() {
+ *     // Pick only the data you need (better performance)
+ *     const input = useProjectStore((state) => state.input);
+ *     const setInput = useProjectStore((state) => state.setInput);
+ *
+ *     return <p>{input?.startupName}</p>;
+ *   }
+ *
+ * Owner: Frontend Lead (Team Member A)
  * =============================================================================
  */
 
@@ -29,41 +40,80 @@ import type {
   StartupInput,
   OrchestrationStatus,
 } from "@/lib/types";
+import { ALL_AGENT_IDS } from "@/lib/agents/config";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STORE TYPE DEFINITION
+// STORE STATE TYPE — What data the store holds
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface ProjectStore {
-  // ── State ────────────────────────────────────────────────────────────────
+  // ── Data ──────────────────────────────────────────────────────────────
+  /** The founder's startup idea input */
   input: StartupInput | null;
-  agents: Partial<Record<AgentId, AgentOutput>>;
-  overallStatus: OrchestrationStatus;
-  activeSection: string;            // Current sidebar nav selection
-  pdfModalOpen: boolean;
 
-  // ── Actions ──────────────────────────────────────────────────────────────
+  /** Agent outputs keyed by agent ID */
+  agents: Partial<Record<AgentId, AgentOutput>>;
+
+  /** Overall pipeline status */
+  overallStatus: OrchestrationStatus;
+
+  /** Current project's MongoDB ID (if saved) */
+  projectId: string | null;
+
+  // ── UI State ──────────────────────────────────────────────────────────
+  /** Which agent's detail view is currently open (null = overview) */
+  selectedAgent: AgentId | null;
+
+  /** Whether the sidebar is collapsed */
+  sidebarCollapsed: boolean;
+
+  /** Whether we're using mock data (for development without API key) */
+  useMockData: boolean;
+
+  // ── Actions ───────────────────────────────────────────────────────────
+  // These are functions that update the state.
+  // Components call these to make changes.
+
+  /** Set the startup idea input */
   setInput: (input: StartupInput) => void;
-  setAgentOutput: (agentId: AgentId, output: AgentOutput) => void;
+
+  /** Update a single agent's output */
+  updateAgent: (agentId: AgentId, output: AgentOutput) => void;
+
+  /** Set the status of a single agent */
   setAgentStatus: (agentId: AgentId, status: AgentStatus) => void;
+
+  /** Set the overall pipeline status */
   setOverallStatus: (status: OrchestrationStatus) => void;
-  setActiveSection: (sectionId: string) => void;
-  togglePdfModal: () => void;
-  setPdfModalOpen: (open: boolean) => void;
-  resetProject: () => void;
-  loadMockData: () => void;
+
+  /** Select an agent to view its details (null for overview) */
+  selectAgent: (agentId: AgentId | null) => void;
+
+  /** Toggle sidebar collapse */
+  toggleSidebar: () => void;
+
+  /** Toggle mock data mode */
+  toggleMockData: () => void;
+
+  /** Save the project ID after saving to MongoDB */
+  setProjectId: (id: string) => void;
+
+  /** Reset everything (start a new project) */
+  reset: () => void;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DEFAULT STATE
+// DEFAULT STATE — What the store looks like when empty
 // ─────────────────────────────────────────────────────────────────────────────
 
-const DEFAULT_STATE = {
+const defaultState = {
   input: null,
   agents: {},
   overallStatus: "not-started" as OrchestrationStatus,
-  activeSection: "orbit",
-  pdfModalOpen: false,
+  projectId: null,
+  selectedAgent: null,
+  sidebarCollapsed: false,
+  useMockData: false,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -71,13 +121,19 @@ const DEFAULT_STATE = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const useProjectStore = create<ProjectStore>()(
+  // persist() wraps the store so state survives page refreshes
   persist(
     (set) => ({
-      ...DEFAULT_STATE,
+      // ── Spread default state ────────────────────────────────────────
+      ...defaultState,
+
+      // ── Action Implementations ──────────────────────────────────────
+      // "set" is a function that updates the state.
+      // It works like React's setState — you give it the fields to change.
 
       setInput: (input) => set({ input }),
 
-      setAgentOutput: (agentId, output) =>
+      updateAgent: (agentId, output) =>
         set((state) => ({
           agents: { ...state.agents, [agentId]: output },
         })),
@@ -94,38 +150,58 @@ export const useProjectStore = create<ProjectStore>()(
           };
         }),
 
-      setOverallStatus: (status) => set({ overallStatus: status }),
+      setOverallStatus: (overallStatus) => set({ overallStatus }),
 
-      setActiveSection: (sectionId) => set({ activeSection: sectionId }),
+      selectAgent: (selectedAgent) => set({ selectedAgent }),
 
-      togglePdfModal: () =>
-        set((state) => ({ pdfModalOpen: !state.pdfModalOpen })),
+      toggleSidebar: () =>
+        set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
-      setPdfModalOpen: (open) => set({ pdfModalOpen: open }),
+      toggleMockData: () =>
+        set((state) => ({ useMockData: !state.useMockData })),
 
-      resetProject: () => set(DEFAULT_STATE),
+      setProjectId: (projectId) => set({ projectId }),
 
-      loadMockData: () => {
-        // Dynamically import to avoid circular deps
-        import("@/lib/mock-data").then(({ MOCK_PROJECT }) => {
-          set({
-            input: MOCK_PROJECT.input,
-            agents: MOCK_PROJECT.agents,
-            overallStatus: MOCK_PROJECT.overallStatus,
-          });
-        });
-      },
+      reset: () => set(defaultState),
     }),
     {
-      name: "founder-os-project",
+      // ── Persist Configuration ───────────────────────────────────────
+      name: "founders-orchestra-project", // localStorage key
+      // Only persist data fields, not UI state
+      partialize: (state) => ({
+        input: state.input,
+        agents: state.agents,
+        overallStatus: state.overallStatus,
+        projectId: state.projectId,
+      }),
     }
   )
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HELPER — Get agent status with fallback
+// DERIVED STATE HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
+// These are utility functions that compute useful values from the store.
+// Use them in components for common calculations.
 
+/**
+ * Calculate overall progress as a percentage (0-100).
+ * Each completed agent adds ~16.7% (100/6).
+ */
+export function calculateProgress(
+  agents: Partial<Record<AgentId, AgentOutput>>
+): number {
+  const total = ALL_AGENT_IDS.length;
+  const completed = ALL_AGENT_IDS.filter(
+    (id) => agents[id]?.status === "completed"
+  ).length;
+  return Math.round((completed / total) * 100);
+}
+
+/**
+ * Get the status of a specific agent from the store.
+ * Returns "idle" if the agent hasn't been started yet.
+ */
 export function getAgentStatus(
   agents: Partial<Record<AgentId, AgentOutput>>,
   agentId: AgentId

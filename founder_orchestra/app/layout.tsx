@@ -4,49 +4,39 @@
  * =============================================================================
  *
  * The root layout wraps the ENTIRE application.
- * Loads fonts, metadata, and global providers.
+ * It provides: fonts, metadata, and global providers.
  *
- * FONTS:
- * - Space Grotesk: headings and display text (--font-display)
- * - Inter: body text (--font-body)
- * - JetBrains Mono: code and mono values (--font-code)
+ * WHAT'S A LAYOUT?
+ * In Next.js App Router, layouts persist across page navigations.
+ * This means the fonts and providers are loaded ONCE, not on every page.
  *
  * Owner: Frontend Lead (Team Member A)
  * =============================================================================
  */
 
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-display",
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
 });
 
-const inter = Inter({
-  variable: "--font-body",
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-code",
-  subsets: ["latin"],
-  weight: ["400", "500"],
 });
 
 // ── SEO Metadata ────────────────────────────────────────────────────────────
+// This controls what appears in browser tabs and search engine results.
+// TODO (Team Member A): Update with your actual brand info
 export const metadata: Metadata = {
-  title: "FounderOS — Intelligence Dashboard",
+  title: "Founders Orchestra — AI Startup Orchestration",
   description:
     "Enter your startup idea and let 6 specialized AI agents validate, research, plan, architect, and market it for you.",
   keywords: ["startup", "AI", "orchestration", "market research", "product management"],
-  other: {
-    "darkreader-lock": "true",
-  },
 };
 
 export default function RootLayout({
@@ -57,8 +47,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
-      suppressHydrationWarning
+      // "dark" class enables dark mode by default
+      // Remove "dark" to use light mode, or add a theme toggle
+      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <TooltipProvider>
