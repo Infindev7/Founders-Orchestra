@@ -1,105 +1,178 @@
 /**
  * =============================================================================
- * PAGE — Landing Page (/)
+ * PAGE — Landing Page
  * =============================================================================
  *
- * The first page users see. Contains:
- * - Hero section with animated background
- * - Tagline and description
- * - The startup idea input form
- * - Visual indicators of the 6 AI agents
+ * The entry point where founders enter their startup idea.
+ * Styled to match the FounderOS dark theme.
  *
  * Owner: Frontend Lead (Team Member A)
  * =============================================================================
  */
 
-import { IdeaForm } from "@/components/landing/idea-form";
-import {
-  Lightbulb,
-  TrendingUp,
-  ClipboardList,
-  Megaphone,
-  Blocks,
-  GitBranch,
-} from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { useProjectStore } from "@/lib/store/project-store";
+import { Zap, ArrowRight, Sparkles, BarChart3, ClipboardList, Building2, Rocket, Megaphone } from "lucide-react";
 
 export default function LandingPage() {
+  const router = useRouter();
+  const setInput = useProjectStore((s) => s.setInput);
+  const loadMockData = useProjectStore((s) => s.loadMockData);
+
+  const [form, setForm] = useState({
+    startupName: "",
+    idea: "",
+    industry: "",
+    targetAudience: "",
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.idea.trim()) return;
+    setInput({
+      startupName: form.startupName || "My Startup",
+      idea: form.idea,
+      industry: form.industry || undefined,
+      targetAudience: form.targetAudience || undefined,
+    });
+    router.push("/dashboard");
+  };
+
+  const handleDemo = () => {
+    loadMockData();
+    router.push("/dashboard");
+  };
+
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* ── Hero Section ─────────────────────────────────────────────────── */}
-      <section className="relative flex-1 flex flex-col items-center justify-center px-4 py-16 overflow-hidden">
-        {/* Gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-background to-purple-500/10 dark:from-indigo-500/5 dark:to-purple-500/5" />
-        {/* Animated grid pattern */}
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage:
-              "linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)",
-            backgroundSize: "60px 60px",
-          }}
-        />
-
-        {/* Content */}
-        <div className="relative z-10 max-w-4xl mx-auto text-center mb-12">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            AI-Powered Startup Analysis
+    <div className="min-h-screen bg-fo-bg flex items-center justify-center px-4">
+      <div className="w-full max-w-2xl">
+        {/* ── Logo ───────────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-center gap-3 mb-8">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-fo-indigo to-purple-500 flex items-center justify-center">
+            <Zap size={20} className="text-white" />
           </div>
-
-          {/* Headline */}
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">
-            Your AI{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">
-              Founding Team
-            </span>
+          <h1 className="font-display text-3xl font-bold tracking-tight">
+            Founder<span className="text-fo-indigo">OS</span>
           </h1>
-
-          {/* Subheadline */}
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Enter your startup idea and let 6 specialized AI agents validate,
-            research, plan, architect, and market it for you — all in minutes.
-          </p>
-
-          {/* Agent icons row */}
-          <div className="flex items-center justify-center gap-6 mb-12">
-            <AgentIcon icon={<Lightbulb size={20} />} label="Advisor" color="text-amber-500" />
-            <AgentIcon icon={<TrendingUp size={20} />} label="Research" color="text-blue-500" />
-            <AgentIcon icon={<ClipboardList size={20} />} label="Product" color="text-purple-500" />
-            <AgentIcon icon={<Megaphone size={20} />} label="Marketing" color="text-pink-500" />
-            <AgentIcon icon={<Blocks size={20} />} label="Architect" color="text-emerald-500" />
-            <AgentIcon icon={<GitBranch size={20} />} label="Engineer" color="text-orange-500" />
-          </div>
         </div>
 
-        {/* The startup idea form */}
-        <div className="relative z-10 w-full">
-          <IdeaForm />
-        </div>
-      </section>
-    </div>
-  );
-}
+        {/* ── Tagline ────────────────────────────────────────────────────── */}
+        <p className="text-center text-fo-sub text-lg mb-10 max-w-md mx-auto leading-relaxed">
+          Enter your startup idea. Six AI agents will validate, research, plan, architect, and market it for you.
+        </p>
 
-// ── Agent Icon Component ────────────────────────────────────────────────────
-function AgentIcon({
-  icon,
-  label,
-  color,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  color: string;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      <div
-        className={`p-2.5 rounded-xl bg-card border border-border shadow-sm ${color}`}
-      >
-        {icon}
+        {/* ── Form Card ──────────────────────────────────────────────────── */}
+        <Card className="bg-fo-surface border-border">
+          <CardHeader>
+            <CardTitle className="font-display text-xl">Launch your idea</CardTitle>
+            <CardDescription className="text-fo-sub">
+              Tell us about your startup and we&apos;ll run the full intelligence pipeline.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-fo-muted font-medium uppercase tracking-[0.8px] mb-1.5 block">
+                    Startup Name
+                  </label>
+                  <Input
+                    placeholder="e.g. FitCoach AI"
+                    value={form.startupName}
+                    onChange={(e) => setForm({ ...form, startupName: e.target.value })}
+                    className="bg-fo-surface2 border-border text-fo-text placeholder:text-fo-muted"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-fo-muted font-medium uppercase tracking-[0.8px] mb-1.5 block">
+                    Industry
+                  </label>
+                  <Input
+                    placeholder="e.g. Health & Fitness"
+                    value={form.industry}
+                    onChange={(e) => setForm({ ...form, industry: e.target.value })}
+                    className="bg-fo-surface2 border-border text-fo-text placeholder:text-fo-muted"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-fo-muted font-medium uppercase tracking-[0.8px] mb-1.5 block">
+                  Your Idea *
+                </label>
+                <Textarea
+                  placeholder="Describe your startup idea in a few sentences..."
+                  rows={3}
+                  value={form.idea}
+                  onChange={(e) => setForm({ ...form, idea: e.target.value })}
+                  className="bg-fo-surface2 border-border text-fo-text placeholder:text-fo-muted resize-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-fo-muted font-medium uppercase tracking-[0.8px] mb-1.5 block">
+                  Target Audience
+                </label>
+                <Input
+                  placeholder="e.g. Busy professionals aged 25-45"
+                  value={form.targetAudience}
+                  onChange={(e) => setForm({ ...form, targetAudience: e.target.value })}
+                  className="bg-fo-surface2 border-border text-fo-text placeholder:text-fo-muted"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  type="submit"
+                  className="flex-1 bg-fo-indigo text-white hover:opacity-85 gap-2 font-semibold"
+                  disabled={!form.idea.trim()}
+                >
+                  <Sparkles size={16} />
+                  Run AI Pipeline
+                  <ArrowRight size={16} />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-border text-fo-sub hover:text-fo-text hover:border-fo-indigo"
+                  onClick={handleDemo}
+                >
+                  Load Demo
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* ── Agent Icons ────────────────────────────────────────────────── */}
+        <div className="flex justify-center gap-6 mt-10">
+          {[
+            { icon: Sparkles, label: "Advisor" },
+            { icon: BarChart3, label: "Research" },
+            { icon: ClipboardList, label: "Product" },
+            { icon: Building2, label: "Architect" },
+            { icon: Rocket, label: "Engineering" },
+            { icon: Megaphone, label: "Marketing" },
+          ].map(({ icon: Icon, label }) => (
+            <div key={label} className="flex flex-col items-center gap-1.5">
+              <div className="w-10 h-10 rounded-lg bg-fo-surface border border-border flex items-center justify-center">
+                <Icon size={18} className="text-fo-sub" />
+              </div>
+              <span className="text-[10px] text-fo-muted font-medium uppercase tracking-wider">
+                {label}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
-      <span className="text-xs text-muted-foreground">{label}</span>
     </div>
   );
 }

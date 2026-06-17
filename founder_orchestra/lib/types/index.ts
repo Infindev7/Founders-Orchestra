@@ -54,10 +54,17 @@ export interface AgentConfig {
   description: string;       // What this agent does
   icon: string;              // Lucide icon name (see: https://lucide.dev/icons)
   color: string;             // Tailwind color class for UI theming
-  model: string;             // Gemini model to use (e.g. "gemini-2.0-flash")
+  model: string;             // Gemini model to use (e.g. "gemini-2.5-flash")
   systemPrompt: string;      // Instructions that tell the AI how to behave
   wave: 1 | 2 | 3;          // Execution order: wave 1 runs first, then 2, then 3
+  tools?: AgentTool[];       // Which tools this agent can use (empty = no tools)
 }
+
+/**
+ * Tools that can be assigned to agents.
+ * - "search": Tavily web search for real-time data (TAM, competitors, trends)
+ */
+export type AgentTool = "search";
 
 /**
  * The output that each agent produces.
@@ -102,6 +109,99 @@ export interface ChartDataPoint {
 export interface TableData {
   headers: string[];
   rows: string[][];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DASHBOARD DATA TYPES — Rich structures from the HTML reference
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** A competitor entry for the Competitive Landscape table */
+export interface CompetitorEntry {
+  name: string;
+  tag: string;              // e.g. "Recovery-focused wearable + app"
+  aiCoachingScore: number;  // 0–100
+  personalizationScore: number; // 0–100
+  pricePerMonth: string;    // e.g. "$30"
+  threatLevel: "high" | "medium" | "low";
+}
+
+/** A user story for the Product Intelligence section */
+export interface UserStory {
+  id: string;               // e.g. "US-001"
+  text: string;             // The user story text
+  epic: string;             // e.g. "Core Workout Engine"
+  priority: "high" | "medium" | "low";
+}
+
+/** A phase in the product roadmap */
+export interface RoadmapPhase {
+  label: string;            // e.g. "Q1 — MVP"
+  title: string;            // e.g. "Foundation"
+  quarter: "q1" | "q2" | "q3";
+  items: string[];          // List of features/milestones
+}
+
+/** A database schema table for the Architecture section */
+export interface SchemaTable {
+  name: string;             // Table name, e.g. "users"
+  columns: SchemaColumn[];
+}
+
+/** A column within a schema table */
+export interface SchemaColumn {
+  name: string;
+  type: string;             // e.g. "uuid", "varchar(255)", "jsonb"
+  isKey: boolean;           // Has a key icon
+  badge?: "PK" | "FK";     // Primary key or foreign key badge
+}
+
+/** A GitHub issue for the Engineering section */
+export interface GithubIssue {
+  number: string;           // e.g. "#001"
+  title: string;
+  labels: IssueLabel[];
+  storyPoints: number;
+}
+
+/** A label on a GitHub issue */
+export interface IssueLabel {
+  text: string;             // e.g. "auth", "feature", "P1"
+  variant: "feat" | "auth" | "infra" | "ui" | "ai" | "p1" | "p2" | "p3";
+}
+
+/** A card on the sprint board */
+export interface SprintCard {
+  title: string;
+  points: number;
+  linkedId?: string;        // e.g. "US-005" or "#004"
+  column: "todo" | "inprog" | "done";
+}
+
+/** A market trend item */
+export interface TrendItem {
+  rank: string;             // e.g. "01"
+  name: string;
+  subtitle: string;
+  sparkData: number[];      // Array of heights (0–100%) for sparkline bars
+  sparkColor: string;       // CSS color for the last bar
+  momentum: string;         // e.g. "+187%"
+  direction: "up" | "down";
+}
+
+/** TAM/SAM/SOM market sizing entry */
+export interface MarketSizingEntry {
+  label: string;            // e.g. "TAM — Total Addressable Market"
+  value: string;            // e.g. "$42B"
+  barPercent: number;       // 0–100, width of the bar
+  barColor: string;         // CSS color variable
+}
+
+/** Marketing copy block */
+export interface MarketingCopy {
+  label: string;            // e.g. "Hero — Above the Fold"
+  headline: string;
+  subtitle: string;
+  cta: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -193,18 +293,15 @@ export interface ReportRequest {
 // UI TYPES — Props and state for frontend components
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Navigation item for the dashboard sidebar */
-export interface SidebarNavItem {
-  agentId: AgentId;
-  label: string;
-  icon: string;
-  status: AgentStatus;
+/** Navigation section in the sidebar */
+export interface SidebarSection {
+  label: string;            // Section heading, e.g. "Research"
+  items: SidebarNavItem[];
 }
 
-/** Props for chart components */
-export interface ChartProps {
-  data: ChartDataPoint[];
-  title?: string;
-  height?: number;
-  className?: string;
+/** A single navigation item in the sidebar */
+export interface SidebarNavItem {
+  label: string;
+  icon: string;             // Lucide icon name
+  sectionId: string;        // HTML id to scroll to
 }

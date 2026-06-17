@@ -12,7 +12,7 @@ npm install
 
 # 2. Create your environment file
 copy .env.example .env.local
-# Then edit .env.local with your actual values (MongoDB URI, API key, etc.)
+# Then edit .env.local with your actual values (MongoDB URI, Google API key, Tavily API key, etc.)
 
 # 3. Start the development server
 npm run dev
@@ -21,7 +21,7 @@ npm run dev
 # Go to http://localhost:3000
 ```
 
-> **💡 Tip:** You can use the "Load demo data" button on the landing page to see the dashboard without needing an API key!
+> **💡 Tip:** You can use the "Load Demo" button on the landing page to see the dashboard without needing any API keys!
 
 ---
 
@@ -32,46 +32,45 @@ founder_orchestra/
 │
 ├── app/                        ← PAGES & API ROUTES (Next.js App Router)
 │   ├── page.tsx                ← Landing page (/)
-│   ├── layout.tsx              ← Root layout (fonts, dark mode, providers)
-│   ├── globals.css             ← Global styles (Tailwind + shadcn variables)
+│   ├── layout.tsx              ← Root layout (fonts, dark mode lock, providers)
+│   ├── globals.css             ← Global styles (Always-dark FounderOS design)
 │   ├── dashboard/
-│   │   ├── layout.tsx          ← Dashboard layout (sidebar + content)
-│   │   └── page.tsx            ← Dashboard page (/dashboard)
+│   │   ├── layout.tsx          ← Dashboard layout (sidebar + topbar)
+│   │   └── page.tsx            ← Main dashboard composed of all sections
 │   └── api/
-│       ├── orchestrate/route.ts ← POST: Trigger AI agents (streaming)
+│       ├── orchestrate/route.ts ← POST: Trigger AI agents (streaming SSE)
 │       ├── projects/route.ts    ← GET/POST: CRUD for projects
 │       ├── report/route.ts      ← POST: Generate PDF report
 │       └── auth/[...nextauth]/route.ts ← Auth endpoints
 │
 ├── components/                 ← REUSABLE UI COMPONENTS
-│   ├── ui/                     ← shadcn/ui primitives (button, card, etc.)
-│   ├── dashboard/              ← Dashboard-specific components
+│   ├── ui/                     ← shadcn/ui primitives (button, card, dialog, etc.)
+│   ├── dashboard/              ← Dashboard-specific sections (13+ components)
 │   │   ├── sidebar.tsx         ← Left navigation sidebar
-│   │   ├── agent-card.tsx      ← Summary card for each agent
-│   │   ├── overview-panel.tsx  ← Main dashboard overview
-│   │   ├── agent-detail-view.tsx ← Full detail view for one agent
-│   │   ├── charts.tsx          ← All chart components (Recharts)
-│   │   └── pdf-export-button.tsx ← PDF download button
-│   └── landing/
-│       └── idea-form.tsx       ← Startup idea input form
+│   │   ├── topbar.tsx          ← Sticky top bar
+│   │   ├── agent-orbit.tsx     ← SVG donut & agent status
+│   │   ├── stats-row.tsx       |
+│   │   ├── market-sizing.tsx   |
+│   │   ├── trend-list.tsx      |
+│   │   ├── ...                 ← Various other section components
+│   │   └── pdf-export-modal.tsx ← Modal for report generation
+│   └── landing/                ← Deprecated/replaced by app/page.tsx
 │
 ├── lib/                        ← CORE LOGIC & UTILITIES
-│   ├── agents/                 ← AI Agent System
+│   ├── agents/                 ← LangGraph AI Agent System
 │   │   ├── config.ts           ← Agent configurations & prompts
-│   │   ├── base-agent.ts       ← Function that runs any agent
-│   │   └── orchestrator.ts     ← Coordinates all agents
+│   │   ├── base-agent.ts       ← LangGraph ReAct & Structured Output runners
+│   │   └── orchestrator.ts     ← Coordinates waves of agents
 │   ├── db/                     ← Database
 │   │   ├── mongodb.ts          ← MongoDB connection
-│   │   └── models/
-│   │       ├── project.ts      ← Project schema
-│   │       └── user.ts         ← User schema
+│   │   └── models/             ← Project & User schemas
 │   ├── pdf/
 │   │   └── report-template.tsx ← PDF report layout
 │   ├── store/
 │   │   └── project-store.ts    ← Zustand state management
 │   ├── types/
 │   │   └── index.ts            ← ALL TypeScript type definitions
-│   ├── mock-data.ts            ← Sample data for development
+│   ├── mock-data.ts            ← Sample FitCoach AI data for development
 │   ├── auth.ts                 ← NextAuth configuration
 │   └── utils.ts                ← Utility functions (cn, etc.)
 │
@@ -84,35 +83,30 @@ founder_orchestra/
 
 ## 👥 Team Division
 
+*Note: The core boilerplate, design system, component layouts, and LangGraph architecture have been completed. The tasks below represent the remaining work to make the app production-ready.*
+
 ### Team Member A: Frontend Lead
 **Focus:** Everything the user SEES and INTERACTS with.
 
 | File/Folder | What to do |
 |---|---|
-| `app/page.tsx` | Landing page design, animations, responsiveness |
-| `app/dashboard/page.tsx` | Dashboard page layout and routing |
-| `app/dashboard/layout.tsx` | Sidebar + content area structure |
-| `components/landing/*` | Hero section, idea form styling |
-| `components/dashboard/*` | All dashboard components |
-| `components/ui/*` | Custom UI components (progress-ring, etc.) |
-| `app/globals.css` | Design system, colors, custom styles |
-| `lib/store/project-store.ts` | Frontend state management |
+| `components/dashboard/*` | Refine component interactions & responsiveness |
+| `components/ui/*` | Add loading states & skeletons |
+| `app/dashboard/page.tsx` | Manage component lifecycle during data loading |
+| `lib/store/project-store.ts` | Expand state for notifications & history |
 
 **Key TODOs:**
-- [ ] Add loading skeletons while agents run
-- [ ] Add micro-animations with Framer Motion
-- [ ] Make dashboard fully responsive (mobile sidebar → hamburger menu)
-- [ ] Add a theme toggle (light/dark mode switch)
-- [ ] Add toast notifications for success/error states
-- [ ] Improve chart tooltips and interactivity
-- [ ] Add a project history page (list of past projects)
+- [ ] Add loading skeletons for dashboard sections while agents are running.
+- [ ] Implement micro-animations using Framer Motion (e.g., when agent statuses change).
+- [ ] Make the dashboard fully responsive (convert sidebar to a hamburger menu on mobile).
+- [ ] Add toast notifications (via shadcn `use-toast`) for success/error states.
+- [ ] Implement a "Project History" page allowing users to view past runs.
+- [ ] Add interactive tooltips to the Recharts components (Market Sizing).
 
 **Tips:**
-- Use `npm run dev` to see changes live
-- The "Load demo data" button lets you work on the dashboard without the backend
-- All styling uses Tailwind CSS — see [tailwindcss.com/docs](https://tailwindcss.com/docs)
-- shadcn/ui components are in `components/ui/` — see [ui.shadcn.com](https://ui.shadcn.com)
-- To add a new shadcn component: `npx shadcn@latest add [component-name]`
+- Use `npm run dev` to see changes live.
+- The "Load Demo" button lets you work on the dashboard without hitting APIs.
+- Refer to [ui.shadcn.com](https://ui.shadcn.com) for adding any new UI components.
 
 ---
 
@@ -121,27 +115,22 @@ founder_orchestra/
 
 | File/Folder | What to do |
 |---|---|
-| `lib/agents/config.ts` | Agent system prompts and model assignments |
-| `lib/agents/base-agent.ts` | Core agent execution logic |
-| `lib/agents/orchestrator.ts` | Multi-agent coordination |
-| `lib/types/index.ts` | Agent-related type definitions |
-| `lib/mock-data.ts` | Realistic sample outputs for testing |
+| `lib/agents/config.ts` | Refine system prompts and add few-shot examples |
+| `lib/agents/base-agent.ts` | Implement streaming and LangGraph checkpoints |
+| `lib/agents/orchestrator.ts` | Improve multi-agent context sharing |
 
 **Key TODOs:**
-- [ ] Refine system prompts for better, more structured output
-- [ ] Add few-shot examples to prompts (show the AI what good output looks like)
-- [ ] Add a "Tools" system — allow agents to search the web, access APIs
-- [ ] Implement retry logic with exponential backoff for failed agents
-- [ ] Add context summarization (use orchestrator model to summarize previous outputs)
-- [ ] Add agent-specific Zod schemas (different validation per agent)
-- [ ] Experiment with different Gemini models for quality vs speed
-- [ ] Add streaming support (stream partial output as agent generates)
+- [ ] Refine system prompts in `config.ts` for even better, more domain-specific structured outputs.
+- [ ] Add few-shot examples to prompts (show the AI exactly what good output looks like).
+- [ ] Implement streaming support so partial agent reasoning text streams into the UI in real-time.
+- [ ] Add human-in-the-loop approvals using LangGraph checkpointing (e.g., pausing after architecture design for user feedback).
+- [ ] Experiment with different Gemini models (Flash vs. Pro) to optimize for speed vs. deep reasoning.
+- [ ] Expand the Tavily web search depth and consider adding more tools (e.g., GitHub repo scraping).
 
 **Tips:**
-- Test agents in isolation first: call `runAgent()` directly from a test script
-- System prompts are the #1 lever for output quality — iterate on them!
-- The `metadata` field in agent output is great for key metrics the dashboard displays
-- Check Google AI Studio for prompt testing: [aistudio.google.com](https://aistudio.google.com)
+- System prompts are the #1 lever for output quality — iterate on them heavily!
+- Use Google AI Studio to test prompts quickly: [aistudio.google.com](https://aistudio.google.com).
+- Reference the [LangGraph.js documentation](https://langchain-ai.github.io/langgraphjs/) for checkpointing & state management.
 
 ---
 
@@ -150,33 +139,23 @@ founder_orchestra/
 
 | File/Folder | What to do |
 |---|---|
-| `lib/db/mongodb.ts` | MongoDB connection management |
-| `lib/db/models/*` | Database schemas (Project, User) |
-| `lib/auth.ts` | Authentication configuration |
-| `app/api/orchestrate/route.ts` | Orchestration API endpoint |
-| `app/api/projects/route.ts` | Projects CRUD API |
-| `app/api/report/route.ts` | PDF generation API |
-| `app/api/auth/*/route.ts` | Auth API routes |
-| `lib/pdf/report-template.tsx` | PDF report layout |
-| `.env.example` | Environment variables |
+| `lib/db/mongodb.ts` | finalize DB connection logic |
+| `lib/auth.ts` | NextAuth configuration |
+| `app/api/*` | API route security & validation |
+| `lib/pdf/report-template.tsx` | PDF layout generation |
 
 **Key TODOs:**
-- [ ] Set up MongoDB Atlas cluster and get connection string
-- [ ] Implement proper password hashing (bcrypt) in auth
-- [ ] Add input validation and sanitization to all API routes
-- [ ] Implement the PDF report generation (uncomment code in report route)
-- [ ] Add API rate limiting to prevent abuse
-- [ ] Add proper error handling and logging
-- [ ] Set up Vercel deployment with environment variables
-- [ ] Add CORS configuration if needed
-- [ ] Add a health check endpoint (`/api/health`)
-- [ ] Implement project deletion endpoint
+- [ ] Set up a MongoDB Atlas cluster and add the connection string to Vercel/environment.
+- [ ] Finish NextAuth.js setup with the MongoDB adapter to support user accounts.
+- [ ] Implement proper PDF report generation using `@react-pdf/renderer` in the export route.
+- [ ] Add input validation (using Zod) and sanitization to all API routes.
+- [ ] Set up Vercel deployment with environment variables securely injected.
+- [ ] Add a health check endpoint (`/api/health`) and API rate limiting.
 
 **Tips:**
-- MongoDB Atlas free tier: [cloud.mongodb.com](https://cloud.mongodb.com)
-- Test API routes with VS Code REST Client or Postman
-- Vercel deployment: push to Git and connect repo at [vercel.com](https://vercel.com)
-- For PDF debugging, render to a file locally first
+- MongoDB Atlas free tier: [cloud.mongodb.com](https://cloud.mongodb.com).
+- Vercel deployment: push to Git and connect your repo at [vercel.com](https://vercel.com).
+- Test API routes thoroughly with VS Code REST Client or Postman.
 
 ---
 
@@ -188,7 +167,8 @@ founder_orchestra/
 | **TypeScript** | JavaScript with type safety | [typescriptlang.org](https://www.typescriptlang.org/docs/) |
 | **Tailwind CSS v4** | Utility-first CSS framework | [tailwindcss.com](https://tailwindcss.com/docs) |
 | **shadcn/ui** | Copy-paste UI components | [ui.shadcn.com](https://ui.shadcn.com) |
-| **Vercel AI SDK** | AI integration library | [sdk.vercel.ai](https://sdk.vercel.ai/docs) |
+| **LangChain & LangGraph** | AI Agent & Graph Framework | [langchain-ai.github.io/langgraphjs](https://langchain-ai.github.io/langgraphjs/) |
+| **Tavily** | Real-time Web Search API | [tavily.com](https://tavily.com) |
 | **Zustand** | Tiny state management | [zustand.docs.pmnd.rs](https://zustand.docs.pmnd.rs/) |
 | **Recharts** | React chart components | [recharts.org](https://recharts.org) |
 | **Mongoose** | MongoDB object modeling | [mongoosejs.com](https://mongoosejs.com/docs/) |
@@ -217,11 +197,12 @@ Run `npm install` to make sure all packages are installed.
 ### "MONGODB_URI is not defined"
 Create a `.env.local` file by copying `.env.example` and filling in your values.
 
-### "API key not working"
+### "API key not working" or "Tavily Error"
 Make sure your Google API key is in `.env.local` as `GOOGLE_GENERATIVE_AI_API_KEY`.
+Make sure your Tavily Search API key is in `.env.local` as `TAVILY_API_KEY`.
 
 ### Dashboard is empty
-Click "Load demo data" on the landing page to populate with sample data.
+Click "Load Demo" on the landing page to populate the app with sample data without making API calls.
 
-### Tailwind classes not working
-Make sure the file is inside the `app/` or `components/` directory.
+### Hydration Error / Dark Reader
+If you use the Dark Reader extension, it may inject CSS that breaks Next.js hydration. We've added a lock meta tag, but if you still see errors, disable Dark Reader for `localhost:3000`.
