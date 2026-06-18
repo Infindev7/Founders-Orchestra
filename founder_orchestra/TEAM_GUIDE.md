@@ -120,8 +120,8 @@ founder_orchestra/
 | `lib/agents/orchestrator.ts` | Improve multi-agent context sharing |
 
 **Key TODOs:**
-- [ ] Refine system prompts in `config.ts` for even better, more domain-specific structured outputs.
-- [ ] Add few-shot examples to prompts (show the AI exactly what good output looks like).
+- [x] Refine system prompts in `config.ts` for even better, more domain-specific structured outputs.
+- [x] Add few-shot examples to prompts (show the AI exactly what good output looks like).
 - [ ] Implement streaming support so partial agent reasoning text streams into the UI in real-time.
 - [ ] Add human-in-the-loop approvals using LangGraph checkpointing (e.g., pausing after architecture design for user feedback).
 - [ ] Experiment with different Gemini models (Flash vs. Pro) to optimize for speed vs. deep reasoning.

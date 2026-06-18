@@ -64,7 +64,7 @@ export function SchemaGrid({ tables = DEFAULT_TABLES }: SchemaGridProps) {
           Database Schema
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
           {tables.map((table) => (
             <div
               key={table.name}

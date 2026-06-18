@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import type { CompetitorEntry } from "@/lib/types";
+import { motion } from "framer-motion";
 
 interface CompetitorTableProps {
   competitors?: CompetitorEntry[];
@@ -38,6 +39,32 @@ const THREAT_STYLES = {
   low: "bg-[rgba(16,185,129,.15)] text-fo-emerald border-0",
 };
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.06,
+    },
+  },
+};
+
+const rowVariants = {
+  hidden: { opacity: 0, y: 8 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 200,
+      damping: 22,
+    },
+  },
+};
+
+const MotionTableBody = motion.create(TableBody);
+const MotionTableRow = motion.create(TableRow);
+
 export function CompetitorTable({ competitors = DEFAULT_COMPETITORS }: CompetitorTableProps) {
   return (
     <Card className="mb-7">
@@ -52,9 +79,13 @@ export function CompetitorTable({ competitors = DEFAULT_COMPETITORS }: Competito
               <TableHead className="text-[11px] font-semibold text-fo-muted uppercase tracking-[0.6px]">Threat Level</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <MotionTableBody variants={containerVariants} initial="hidden" animate="show">
             {competitors.map((comp) => (
-              <TableRow key={comp.name} className="border-[rgba(255,255,255,.04)] hover:bg-[rgba(255,255,255,.02)]">
+              <MotionTableRow
+                key={comp.name}
+                variants={rowVariants}
+                className="border-[rgba(255,255,255,.04)] hover:bg-[rgba(255,255,255,.02)]"
+              >
                 <TableCell>
                   <span className="font-semibold text-[13px]">{comp.name}</span>
                   <span className="block text-[11px] text-fo-sub">{comp.tag}</span>
@@ -73,9 +104,9 @@ export function CompetitorTable({ competitors = DEFAULT_COMPETITORS }: Competito
                     {comp.threatLevel}
                   </Badge>
                 </TableCell>
-              </TableRow>
+              </MotionTableRow>
             ))}
-          </TableBody>
+          </MotionTableBody>
         </Table>
       </CardContent>
     </Card>
@@ -86,7 +117,12 @@ function ScoreBar({ score }: { score: number }) {
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1 h-[5px] bg-[rgba(255,255,255,.06)] rounded-sm overflow-hidden">
-        <div className="h-full rounded-sm bg-fo-indigo" style={{ width: `${score}%` }} />
+        <motion.div
+          className="h-full rounded-sm bg-fo-indigo"
+          initial={{ width: 0 }}
+          animate={{ width: `${score}%` }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+        />
       </div>
       <span className="font-mono text-xs text-fo-sub w-6">{score}</span>
     </div>

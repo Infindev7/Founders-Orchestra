@@ -15,6 +15,7 @@
 import { cn } from "@/lib/utils";
 import { useProjectStore, getAgentStatus } from "@/lib/store/project-store";
 import { ALL_AGENT_IDS } from "@/lib/agents/config";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap,
   LayoutDashboard,
@@ -71,7 +72,12 @@ const STATUS_COLORS: Record<string, string> = {
   error: "bg-fo-rose",
 };
 
-export function Sidebar() {
+interface SidebarProps {
+  open?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ open = false, onClose }: SidebarProps) {
   const agents = useProjectStore((s) => s.agents);
   const activeSection = useProjectStore((s) => s.activeSection);
   const setActiveSection = useProjectStore((s) => s.setActiveSection);
@@ -83,7 +89,67 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-[240px] min-h-screen bg-fo-surface border-r border-border flex flex-col py-6 fixed top-0 left-0 bottom-0 z-50">
+    <>
+      {/* Desktop Sidebar (visible on md+) */}
+      <aside className="w-[240px] min-h-screen bg-fo-surface border-r border-border md:flex hidden flex-col py-6 fixed top-0 left-0 bottom-0 z-50">
+        <SidebarContent
+          agents={agents}
+          activeSection={activeSection}
+          onNavClick={handleNavClick}
+        />
+      </aside>
+
+      {/* Mobile Sidebar (slide-over sheet on md-) */}
+      <AnimatePresence>
+        {open && (
+          <>
+            {/* Backdrop overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              className="fixed inset-0 bg-black z-40 md:hidden block"
+            />
+            {/* Slide-over panel */}
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              className="w-[240px] min-h-screen bg-fo-surface border-r border-border flex flex-col py-6 fixed top-0 left-0 bottom-0 z-50 md:hidden"
+            >
+              <SidebarContent
+                agents={agents}
+                activeSection={activeSection}
+                onNavClick={(secId) => {
+                  handleNavClick(secId);
+                  onClose?.();
+                }}
+              />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INTERNAL — Sidebar Content Layout
+// ─────────────────────────────────────────────────────────────────────────────
+
+import type { AgentId, AgentOutput } from "@/lib/types";
+
+interface SidebarContentProps {
+  agents: Partial<Record<AgentId, AgentOutput>>;
+  activeSection: string;
+  onNavClick: (sectionId: string) => void;
+}
+
+function SidebarContent({ agents, activeSection, onNavClick }: SidebarContentProps) {
+  return (
+    <>
       {/* ── Logo ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2.5 px-5 pb-7 border-b border-border">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-fo-indigo to-purple-500 flex items-center justify-center">
@@ -95,31 +161,33 @@ export function Sidebar() {
       </div>
 
       {/* ── Nav Sections ─────────────────────────────────────────────────── */}
-      {NAV_SECTIONS.map((section) => (
-        <div key={section.label} className="px-3 pt-5 pb-2">
-          <div className="text-[10px] font-semibold tracking-[1.2px] text-fo-muted uppercase px-2 mb-1.5">
-            {section.label}
+      <div className="flex-1 overflow-y-auto">
+        {NAV_SECTIONS.map((section) => (
+          <div key={section.label} className="px-3 pt-5 pb-2">
+            <div className="text-[10px] font-semibold tracking-[1.2px] text-fo-muted uppercase px-2 mb-1.5">
+              {section.label}
+            </div>
+            {section.items.map((item) => {
+              const isActive = activeSection === item.sectionId;
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => onNavClick(item.sectionId)}
+                  className={cn(
+                    "flex items-center gap-2.5 w-full rounded-lg px-2.5 py-2 text-[13.5px] font-medium transition-colors mb-0.5",
+                    isActive
+                      ? "bg-[rgba(99,102,241,.15)] text-fo-indigo"
+                      : "text-fo-sub hover:bg-fo-surface2 hover:text-fo-text"
+                  )}
+                >
+                  <item.icon size={18} />
+                  {item.label}
+                </button>
+              );
+            })}
           </div>
-          {section.items.map((item) => {
-            const isActive = activeSection === item.sectionId;
-            return (
-              <button
-                key={item.label}
-                onClick={() => handleNavClick(item.sectionId)}
-                className={cn(
-                  "flex items-center gap-2.5 w-full rounded-lg px-2.5 py-2 text-[13.5px] font-medium transition-colors mb-0.5",
-                  isActive
-                    ? "bg-[rgba(99,102,241,.15)] text-fo-indigo"
-                    : "text-fo-sub hover:bg-fo-surface2 hover:text-fo-text"
-                )}
-              >
-                <item.icon size={18} />
-                {item.label}
-              </button>
-            );
-          })}
-        </div>
-      ))}
+        ))}
+      </div>
 
       {/* ── Bottom: Agent Status Dots ─────────────────────────────────────── */}
       <div className="mt-auto px-5 pt-4 border-t border-border">
@@ -137,6 +205,6 @@ export function Sidebar() {
           })}
         </div>
       </div>
-    </aside>
+    </>
   );
 }

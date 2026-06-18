@@ -56,7 +56,7 @@ export function SprintBoard({ cards = DEFAULT_CARDS }: SprintBoardProps) {
           Sprint 1 — 2 Weeks
         </div>
 
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
           {columns.map((col) => (
             <div key={col.key}>
               {/* Column header */}

@@ -23,7 +23,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { useProjectStore } from "@/lib/store/project-store";
+import { useProjectStore, getAgentStatus } from "@/lib/store/project-store";
+import { motion, AnimatePresence } from "framer-motion";
+import type { AgentStatus } from "@/lib/types";
 
 // Dashboard sections
 import { AgentOrbit } from "@/components/dashboard/agent-orbit";
@@ -39,9 +41,54 @@ import { GithubIssues } from "@/components/dashboard/github-issues";
 import { SprintBoard } from "@/components/dashboard/sprint-board";
 import { MarketingAssets } from "@/components/dashboard/marketing-assets";
 
+// Loading skeletons
+import {
+  MarketSizingSkeleton,
+  TrendListSkeleton,
+  CompetitorTableSkeleton,
+  UserStoriesSkeleton,
+  ProductRoadmapSkeleton,
+  SchemaGridSkeleton,
+  GithubIssuesSkeleton,
+  SprintBoardSkeleton,
+  MarketingAssetsSkeleton,
+} from "@/components/dashboard/dashboard-skeletons";
+
+// Helper to determine badge/suffix based on agent status
+function getHeaderStatusProps(status: AgentStatus) {
+  switch (status) {
+    case "running":
+      return {
+        badge: "⚡ Generating…",
+        badgeColor: "#F59E0B",
+        suffix: undefined,
+      };
+    case "idle":
+      return {
+        badge: undefined,
+        badgeColor: undefined,
+        suffix: "(queued)",
+      };
+    case "error":
+      return {
+        badge: "⚠️ Error",
+        badgeColor: "#F43F5E",
+        suffix: undefined,
+      };
+    case "completed":
+    default:
+      return {
+        badge: undefined,
+        badgeColor: undefined,
+        suffix: undefined,
+      };
+  }
+}
+
 export default function DashboardPage() {
   const loadMockData = useProjectStore((s) => s.loadMockData);
   const input = useProjectStore((s) => s.input);
+  const agents = useProjectStore((s) => s.agents);
 
   // Auto-load mock data if no project is loaded
   useEffect(() => {
@@ -49,6 +96,13 @@ export default function DashboardPage() {
       loadMockData();
     }
   }, [input, loadMockData]);
+
+  // Retrieve statuses of the corresponding agents
+  const marketStatus = getAgentStatus(agents, "market-research");
+  const pmStatus = getAgentStatus(agents, "product-manager");
+  const architectStatus = getAgentStatus(agents, "architect");
+  const engStatus = getAgentStatus(agents, "engineering-manager");
+  const marketingStatus = getAgentStatus(agents, "marketing");
 
   return (
     <div>
@@ -64,10 +118,36 @@ export default function DashboardPage() {
           title="Market Intelligence"
           color="#38BDF8"
           action="View full report →"
+          {...getHeaderStatusProps(marketStatus)}
         />
-        <div className="grid grid-cols-2 gap-5 mb-7">
-          <MarketSizing />
-          <TrendList />
+        <div className="relative min-h-[200px]">
+          <AnimatePresence mode="wait">
+            {marketStatus === "completed" ? (
+              <motion.div
+                key="market-content"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.45, ease: "easeOut" }}
+                className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-7"
+              >
+                <MarketSizing />
+                <TrendList />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="market-skeleton"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-7"
+              >
+                <MarketSizingSkeleton />
+                <TrendListSkeleton />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 
@@ -77,8 +157,33 @@ export default function DashboardPage() {
           title="Competitive Landscape"
           color="#F43F5E"
           action="Full matrix →"
+          {...getHeaderStatusProps(marketStatus)}
         />
-        <CompetitorTable />
+        <div className="relative min-h-[250px] mb-7">
+          <AnimatePresence mode="wait">
+            {marketStatus === "completed" ? (
+              <motion.div
+                key="competitor-content"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.45, ease: "easeOut" }}
+              >
+                <CompetitorTable />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="competitor-skeleton"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <CompetitorTableSkeleton />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </section>
 
       {/* ── Product Intelligence ───────────────────────────────────────────── */}
@@ -86,34 +191,108 @@ export default function DashboardPage() {
         <SectionHeader
           title="Product Intelligence"
           color="#6366F1"
+          {...getHeaderStatusProps(pmStatus)}
         />
-        <div className="grid grid-cols-2 gap-5 mb-7">
-          <UserStories />
-          <ProductRoadmap />
+        <div className="relative min-h-[220px]">
+          <AnimatePresence mode="wait">
+            {pmStatus === "completed" ? (
+              <motion.div
+                key="product-content"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.45, ease: "easeOut" }}
+                className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-7"
+              >
+                <UserStories />
+                <ProductRoadmap />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="product-skeleton"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-7"
+              >
+                <UserStoriesSkeleton />
+                <ProductRoadmapSkeleton />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 
       {/* ── Architecture ───────────────────────────────────────────────────── */}
       <section id="architecture">
         <SectionHeader
-          title="Architecture — In Progress"
+          title="Architecture"
           color="#F59E0B"
-          badge="⚡ Generating…"
-          badgeColor="#F59E0B"
+          {...getHeaderStatusProps(architectStatus)}
         />
-        <SchemaGrid />
+        <div className="relative min-h-[180px] mb-7">
+          <AnimatePresence mode="wait">
+            {architectStatus === "completed" ? (
+              <motion.div
+                key="architecture-content"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.45, ease: "easeOut" }}
+              >
+                <SchemaGrid />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="architecture-skeleton"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <SchemaGridSkeleton />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </section>
 
       {/* ── Engineering Execution ──────────────────────────────────────────── */}
       <section id="engineering">
         <SectionHeader
           title="Engineering Execution"
-          color="#64748B"
-          suffix="(queued)"
+          color="#8B5CF6"
+          {...getHeaderStatusProps(engStatus)}
         />
-        <div className="grid grid-cols-2 gap-5 mb-7">
-          <GithubIssues />
-          <SprintBoard />
+        <div className="relative min-h-[220px]">
+          <AnimatePresence mode="wait">
+            {engStatus === "completed" ? (
+              <motion.div
+                key="engineering-content"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.45, ease: "easeOut" }}
+                className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-7"
+              >
+                <GithubIssues />
+                <SprintBoard />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="engineering-skeleton"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-7"
+              >
+                <GithubIssuesSkeleton />
+                <SprintBoardSkeleton />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 
@@ -121,10 +300,34 @@ export default function DashboardPage() {
       <section id="marketing">
         <SectionHeader
           title="Marketing Assets"
-          color="#64748B"
-          suffix="(queued)"
+          color="#F43F5E"
+          {...getHeaderStatusProps(marketingStatus)}
         />
-        <MarketingAssets />
+        <div className="relative min-h-[180px]">
+          <AnimatePresence mode="wait">
+            {marketingStatus === "completed" ? (
+              <motion.div
+                key="marketing-content"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.45, ease: "easeOut" }}
+              >
+                <MarketingAssets />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="marketing-skeleton"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <MarketingAssetsSkeleton />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </section>
     </div>
   );
