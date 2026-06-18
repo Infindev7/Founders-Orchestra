@@ -26,20 +26,15 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db/mongodb";
 import { Project } from "@/lib/db/models/project";
 import { orchestrate } from "@/lib/agents/orchestrator";
-import type { OrchestrateRequest } from "@/lib/types";
+import { validateBody } from "@/lib/validations/helpers";
+import { orchestrateRequestSchema } from "@/lib/validations/schemas";
 
 export async function POST(request: Request) {
   try {
-    // ── Parse the request body ──────────────────────────────────────────
-    const body: OrchestrateRequest = await request.json();
-
-    // ── Validate input ──────────────────────────────────────────────────
-    if (!body.input?.startupName || !body.input?.idea) {
-      return NextResponse.json(
-        { error: "startupName and idea are required" },
-        { status: 400 }
-      );
-    }
+    // ── Parse & validate request body ───────────────────────────────────
+    const validationResult = await validateBody(request, orchestrateRequestSchema);
+    if (!validationResult.success) return validationResult.response;
+    const body = validationResult.data;
 
     // ── Connect to MongoDB ──────────────────────────────────────────────
     await connectDB();

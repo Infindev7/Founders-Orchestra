@@ -15,6 +15,8 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db/mongodb";
 import { Project } from "@/lib/db/models/project";
+import { validateBody, validateQuery } from "@/lib/validations/helpers";
+import { getProjectQuerySchema, createProjectSchema } from "@/lib/validations/schemas";
 
 // ── GET: Fetch projects ─────────────────────────────────────────────────────
 export async function GET(request: Request) {
@@ -22,7 +24,9 @@ export async function GET(request: Request) {
     await connectDB();
 
     const { searchParams } = new URL(request.url);
-    const projectId = searchParams.get("id");
+    const validationResult = validateQuery(searchParams, getProjectQuerySchema);
+    if (!validationResult.success) return validationResult.response;
+    const { id: projectId } = validationResult.data;
 
     if (projectId) {
       // ── Get a specific project ──────────────────────────────────────
@@ -58,14 +62,9 @@ export async function POST(request: Request) {
   try {
     await connectDB();
 
-    const body = await request.json();
-
-    if (!body.input?.startupName || !body.input?.idea) {
-      return NextResponse.json(
-        { error: "startupName and idea are required" },
-        { status: 400 }
-      );
-    }
+    const validationResult = await validateBody(request, createProjectSchema);
+    if (!validationResult.success) return validationResult.response;
+    const body = validationResult.data;
 
     const project = await Project.create({
       userId: "anonymous", // TODO: Get from auth session

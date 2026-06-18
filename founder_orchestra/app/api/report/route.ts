@@ -21,19 +21,15 @@ import { Project } from "@/lib/db/models/project";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { ReportDocument } from "@/lib/pdf/report-template";
 import React from "react";
+import { validateBody } from "@/lib/validations/helpers";
+import { reportRequestSchema } from "@/lib/validations/schemas";
 
 export async function POST(request: Request) {
   try {
     // ── Parse & validate input ────────────────────────────────────────────
-    const body = await request.json();
-    const { projectId } = body;
-
-    if (!projectId) {
-      return NextResponse.json(
-        { error: "projectId is required" },
-        { status: 400 }
-      );
-    }
+    const validationResult = await validateBody(request, reportRequestSchema);
+    if (!validationResult.success) return validationResult.response;
+    const { projectId } = validationResult.data;
 
     // ── Fetch project from database ───────────────────────────────────────
     await connectDB();
