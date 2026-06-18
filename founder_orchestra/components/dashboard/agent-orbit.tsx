@@ -19,6 +19,7 @@ import { Progress } from "@/components/ui/progress";
 import { useProjectStore, getAgentStatus } from "@/lib/store/project-store";
 import { AGENT_CONFIGS, ALL_AGENT_IDS } from "@/lib/agents/config";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 import {
   Lightbulb,
   FlaskConical,
@@ -76,9 +77,9 @@ export function AgentOrbit() {
   const runLen = (counts.running / total) * circumference;
 
   return (
-    <div id="orbit" className="flex gap-6 mb-7 items-start">
+    <div id="orbit" className="flex flex-col lg:flex-row gap-6 mb-7 items-stretch">
       {/* ── Status Ring ──────────────────────────────────────────────────── */}
-      <Card className="min-w-[220px] relative overflow-hidden">
+      <Card className="w-full lg:w-[220px] lg:min-w-[220px] relative overflow-hidden">
         {/* Radial gradient glow */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(99,102,241,.12)_0%,transparent_70%)] pointer-events-none" />
         <CardContent className="flex flex-col items-center pt-6 pb-5 relative">
@@ -89,17 +90,21 @@ export function AgentOrbit() {
             {/* Background ring */}
             <circle cx="80" cy="80" r="60" fill="none" stroke="rgba(255,255,255,.06)" strokeWidth="10" />
             {/* Done arc */}
-            <circle
+            <motion.circle
               cx="80" cy="80" r="60" fill="none" stroke="#10B981" strokeWidth="10"
-              strokeDasharray={`${doneLen} ${circumference - doneLen}`}
+              animate={{ strokeDasharray: `${doneLen} ${circumference - doneLen}` }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
               strokeDashoffset="0" strokeLinecap="round"
               transform="rotate(-90 80 80)"
             />
             {/* Running arc */}
-            <circle
+            <motion.circle
               cx="80" cy="80" r="60" fill="none" stroke="#F59E0B" strokeWidth="10"
-              strokeDasharray={`${runLen} ${circumference - runLen}`}
-              strokeDashoffset={`${-doneLen}`}
+              animate={{
+                strokeDasharray: `${runLen} ${circumference - runLen}`,
+                strokeDashoffset: -doneLen
+              }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
               strokeLinecap="round" transform="rotate(-90 80 80)"
             />
             {/* Center text */}
@@ -140,47 +145,78 @@ function AgentRow({ agentId }: { agentId: AgentId }) {
   const badge = STATUS_BADGE[status];
   const IconComponent = AGENT_ICONS[config.icon];
   const progressValue = status === "completed" ? 100 : status === "running" ? 65 : 0;
+  const isRunning = status === "running";
 
   return (
-    <Card
-      className={cn(
-        "transition-colors",
-        status === "running" && "border-[rgba(245,158,11,.3)]",
-        status === "idle" && "opacity-50"
-      )}
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{
+        opacity: status === "idle" ? 0.55 : 1,
+        y: 0,
+        boxShadow: isRunning
+          ? [
+              "0 0 0px rgba(245, 158, 11, 0)",
+              "0 0 14px rgba(245, 158, 11, 0.18)",
+              "0 0 0px rgba(245, 158, 11, 0)"
+            ]
+          : "0px 0px 0px rgba(0,0,0,0)",
+      }}
+      whileHover={{ scale: 1.008, x: 3 }}
+      transition={{
+        boxShadow: isRunning ? { repeat: Infinity, duration: 2, ease: "easeInOut" } : { duration: 0.2 },
+        default: { duration: 0.25 }
+      }}
+      className="w-full rounded-xl overflow-hidden"
     >
-      <CardContent className="flex items-center gap-3.5 py-3.5 px-4">
-        {/* Agent icon */}
-        <div
-          className="w-9 h-9 rounded-[9px] flex items-center justify-center flex-shrink-0"
-          style={{ background: STATUS_ICON_BG[status] }}
-        >
-          {IconComponent && <IconComponent size={17} />}
-        </div>
+      <Card
+        className={cn(
+          "transition-colors h-full",
+          status === "running" && "border-[rgba(245,158,11,.45)]",
+          status === "idle" && "opacity-80"
+        )}
+      >
+        <CardContent className="flex items-center gap-3.5 py-3.5 px-4">
+          {/* Agent icon */}
+          <div
+            className="w-9 h-9 rounded-[9px] flex items-center justify-center flex-shrink-0"
+            style={{ background: STATUS_ICON_BG[status] }}
+          >
+            {IconComponent && <IconComponent size={17} />}
+          </div>
 
-        {/* Agent info */}
-        <div className="flex-1 min-w-0">
-          <div className="text-[13.5px] font-semibold font-display">
-            {config.name}
+          {/* Agent info */}
+          <div className="flex-1 min-w-0">
+            <div className="text-[13.5px] font-semibold font-display">
+              {config.name}
+            </div>
+            <div className="text-xs text-fo-sub mt-0.5 truncate">
+              {output?.summary || config.description}
+            </div>
+            {/* Progress bar */}
+            <div className="mt-1.5 h-[3px] w-20 bg-[rgba(255,255,255,.06)] rounded-sm overflow-hidden">
+              <motion.div
+                className={cn("h-full rounded-sm", STATUS_BAR_COLOR[status])}
+                initial={{ width: 0 }}
+                animate={{ width: `${progressValue}%` }}
+                transition={{ duration: 0.6, ease: "easeInOut" }}
+              />
+            </div>
           </div>
-          <div className="text-xs text-fo-sub mt-0.5 truncate">
-            {output?.summary || config.description}
-          </div>
-          {/* Progress bar */}
-          <div className="mt-1.5 h-[3px] w-20 bg-[rgba(255,255,255,.06)] rounded-sm overflow-hidden">
-            <div
-              className={cn("h-full rounded-sm transition-all duration-1000 fo-fill-anim", STATUS_BAR_COLOR[status])}
-              style={{ width: `${progressValue}%` }}
-            />
-          </div>
-        </div>
 
-        {/* Status badge */}
-        <Badge className={cn("text-[11px] font-semibold", badge.className)}>
-          {badge.label}
-        </Badge>
-      </CardContent>
-    </Card>
+          {/* Status badge */}
+          <motion.div
+            key={status}
+            initial={{ scale: 0.85, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+          >
+            <Badge className={cn("text-[11px] font-semibold", badge.className)}>
+              {badge.label}
+            </Badge>
+          </motion.div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 

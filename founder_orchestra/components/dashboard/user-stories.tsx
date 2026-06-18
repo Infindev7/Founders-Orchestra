@@ -15,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserStory } from "@/lib/types";
+import { motion } from "framer-motion";
 
 interface UserStoriesProps {
   stories?: UserStory[];
@@ -34,6 +35,29 @@ const PRIORITY_COLORS = {
   low: "bg-fo-emerald",
 };
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 220,
+      damping: 20,
+    },
+  },
+};
+
 export function UserStories({ stories = DEFAULT_STORIES }: UserStoriesProps) {
   return (
     <Card>
@@ -44,23 +68,31 @@ export function UserStories({ stories = DEFAULT_STORIES }: UserStoriesProps) {
           <span className="font-mono text-[11px] text-fo-muted font-normal ml-auto">{stories.length} total</span>
         </div>
 
-        <div className="flex flex-col gap-2">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="flex flex-col gap-2"
+        >
           {stories.map((story) => (
-            <div
+            <motion.div
               key={story.id}
-              className="flex items-start gap-3 p-3 px-3.5 rounded-lg bg-[rgba(255,255,255,.025)] border border-[rgba(255,255,255,.05)]"
+              variants={itemVariants}
+              whileHover={{ x: 3 }}
+              transition={{ x: { duration: 0.15 } }}
+              className="flex items-start gap-3 p-3 px-3.5 rounded-lg bg-[rgba(255,255,255,.025)] border border-[rgba(255,255,255,.05)] cursor-default"
             >
               {/* Priority dot */}
-              <div className={cn("w-[7px] h-[7px] rounded-full flex-shrink-0 mt-1", PRIORITY_COLORS[story.priority])} />
+              <div className={cn("w-[7px] h-[7px] rounded-full flex-shrink-0 mt-1.5", PRIORITY_COLORS[story.priority])} />
 
               <div>
                 <div className="font-mono text-[10px] text-fo-indigo font-semibold">{story.id}</div>
                 <div className="text-[13px] leading-snug mt-0.5">{story.text}</div>
                 <div className="text-[10px] text-fo-sub mt-1">Epic: {story.epic}</div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </CardContent>
     </Card>
   );

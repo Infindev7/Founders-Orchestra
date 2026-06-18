@@ -15,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Map } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RoadmapPhase } from "@/lib/types";
+import { motion } from "framer-motion";
 
 interface ProductRoadmapProps {
   phases?: RoadmapPhase[];
@@ -32,6 +33,29 @@ const QUARTER_STYLES = {
   q3: { bg: "bg-[rgba(16,185,129,.07)]", border: "border-[rgba(16,185,129,.25)]", label: "text-fo-emerald" },
 };
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const columnVariants = {
+  hidden: { opacity: 0, y: 15 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 160,
+      damping: 18,
+    },
+  },
+};
+
 export function ProductRoadmap({ phases = DEFAULT_PHASES }: ProductRoadmapProps) {
   return (
     <Card>
@@ -41,14 +65,22 @@ export function ProductRoadmap({ phases = DEFAULT_PHASES }: ProductRoadmapProps)
           Product Roadmap
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 md:grid-cols-3 gap-3"
+        >
           {phases.map((phase) => {
             const style = QUARTER_STYLES[phase.quarter];
             return (
-              <div
+              <motion.div
                 key={phase.label}
+                variants={columnVariants}
+                whileHover={{ y: -3, scale: 1.015 }}
+                transition={{ y: { duration: 0.15 }, scale: { duration: 0.15 } }}
                 className={cn(
-                  "rounded-[10px] p-3.5 border",
+                  "rounded-[10px] p-3.5 border cursor-default",
                   style.bg,
                   style.border
                 )}
@@ -65,10 +97,10 @@ export function ProductRoadmap({ phases = DEFAULT_PHASES }: ProductRoadmapProps)
                     </li>
                   ))}
                 </ul>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </CardContent>
     </Card>
   );
