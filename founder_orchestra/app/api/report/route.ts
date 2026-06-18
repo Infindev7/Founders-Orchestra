@@ -8,13 +8,8 @@
  * HOW IT WORKS:
  * 1. Frontend sends a POST request with the project ID
  * 2. We fetch the project from MongoDB
- * 3. We use @react-pdf/renderer to generate a PDF
+ * 3. We use @react-pdf/renderer to generate a PDF buffer
  * 4. We return the PDF as a downloadable file
- *
- * TODO (Team Member C):
- * - Implement the actual PDF generation (see lib/pdf/report-template.tsx)
- * - Add charts as static images in the PDF
- * - Add company branding/logo
  *
  * Owner: Backend Lead (Team Member C)
  * =============================================================================
@@ -23,13 +18,15 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db/mongodb";
 import { Project } from "@/lib/db/models/project";
-// TODO: Uncomment when PDF template is fully implemented
-// import { renderToBuffer } from "@react-pdf/renderer";
-// import { ReportDocument } from "@/lib/pdf/report-template";
+import { renderToBuffer } from "@react-pdf/renderer";
+import { ReportDocument } from "@/lib/pdf/report-template";
+import React from "react";
 
 export async function POST(request: Request) {
   try {
-    const { projectId } = await request.json();
+    // ── Parse & validate input ────────────────────────────────────────────
+    const body = await request.json();
+    const { projectId } = body;
 
     if (!projectId) {
       return NextResponse.json(
@@ -38,9 +35,9 @@ export async function POST(request: Request) {
       );
     }
 
+    // ── Fetch project from database ───────────────────────────────────────
     await connectDB();
 
-    // ── Fetch project ───────────────────────────────────────────────────
     const project = await Project.findById(projectId);
     if (!project) {
       return NextResponse.json(
@@ -49,31 +46,58 @@ export async function POST(request: Request) {
       );
     }
 
-    // ── Generate PDF ────────────────────────────────────────────────────
-    // TODO: Replace this placeholder with actual PDF generation
-    // Once lib/pdf/report-template.tsx is ready, use:
-    //
-    // const pdfBuffer = await renderToBuffer(
-    //   <ReportDocument project={project} />
-    // );
-    //
-    // return new Response(pdfBuffer, {
-    //   headers: {
-    //     "Content-Type": "application/pdf",
-    //     "Content-Disposition": `attachment; filename="${project.input.startupName}-report.pdf"`,
-    //   },
-    // });
+    // ── Check that at least one agent has completed ───────────────────────
+    const completedAgents = Object.values(project.agents || {}).filter(
+      (agent: { status?: string }) => agent?.status === "completed"
+    );
 
-    // ── Placeholder response ────────────────────────────────────────────
-    return NextResponse.json({
-      message: "PDF generation endpoint ready. Implement report-template.tsx to enable.",
-      projectId: project._id,
-      startupName: project.input.startupName,
+    if (completedAgents.length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "No completed agent outputs found. Run the orchestration first.",
+        },
+        { status: 422 }
+      );
+    }
+
+    // ── Generate PDF ─────────────────────────────────────────────────────
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const documentElement = React.createElement(ReportDocument, {
+      project: {
+        _id: project._id?.toString(),
+        input: project.input,
+        agents: project.agents,
+        overallStatus: project.overallStatus,
+        createdAt: project.createdAt?.toISOString?.() ?? "",
+        updatedAt: project.updatedAt?.toISOString?.() ?? "",
+      },
+    }) as any; // Cast required: @react-pdf/renderer types expect DocumentProps at top level
+
+    const pdfBuffer = await renderToBuffer(documentElement);
+
+    // ── Sanitize the filename ────────────────────────────────────────────
+    const safeName = project.input.startupName
+      .replace(/[^a-zA-Z0-9-_ ]/g, "")
+      .replace(/\s+/g, "-")
+      .toLowerCase();
+
+    // Convert Node Buffer to Uint8Array for web-standard Response compatibility
+    const pdfBytes = new Uint8Array(pdfBuffer);
+
+    // ── Return PDF as a downloadable file ────────────────────────────────
+    return new Response(pdfBytes, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${safeName}-report.pdf"`,
+        "Cache-Control": "no-store",
+      },
     });
   } catch (error) {
     console.error("[/api/report] Error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to generate PDF report" },
       { status: 500 }
     );
   }
