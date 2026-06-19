@@ -18,6 +18,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -64,6 +65,7 @@ export default function RootLayout({
         <TooltipProvider>
           {children}
         </TooltipProvider>
+        <Toaster />
       </body>
     </html>
   );

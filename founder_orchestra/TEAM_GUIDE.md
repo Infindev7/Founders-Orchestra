@@ -96,12 +96,12 @@ founder_orchestra/
 | `lib/store/project-store.ts` | Expand state for notifications & history |
 
 **Key TODOs:**
-- [ ] Add loading skeletons for dashboard sections while agents are running.
-- [ ] Implement micro-animations using Framer Motion (e.g., when agent statuses change).
-- [ ] Make the dashboard fully responsive (convert sidebar to a hamburger menu on mobile).
-- [ ] Add toast notifications (via shadcn `use-toast`) for success/error states.
-- [ ] Implement a "Project History" page allowing users to view past runs.
-- [ ] Add interactive tooltips to the Recharts components (Market Sizing).
+- [x] Add loading skeletons for dashboard sections while agents are running.
+- [x] Implement micro-animations using Framer Motion (e.g., when agent statuses change).
+- [x] Make the dashboard fully responsive (convert sidebar to a hamburger menu on mobile).
+- [x] Add toast notifications (via shadcn `use-toast`) for success/error states.
+- [x] Implement a "Project History" page allowing users to view past runs.
+- [x] Add interactive tooltips to the Recharts components (Market Sizing).
 
 **Tips:**
 - Use `npm run dev` to see changes live.

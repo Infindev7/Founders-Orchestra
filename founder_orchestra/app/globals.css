@@ -148,3 +148,35 @@ ol[data-radix-toast-viewport] {
   list-style: none !important;
   outline: none !important;
 }
+
+/* ─── Custom scrollbar styles ─── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #070B18;
+}
+::-webkit-scrollbar-thumb {
+  background: #111D35;
+  border-radius: 9999px;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.35);
+}
+
+/* Specific styling for overflow-y-auto areas like sidebar */
+.flex-1.overflow-y-auto::-webkit-scrollbar {
+  width: 4px;
+}
+.flex-1.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+.flex-1.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+}
+.flex-1.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.35);
+}

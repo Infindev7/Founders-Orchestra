@@ -30,6 +30,50 @@ const STATUS_CONFIGS: Record<OrchestrationStatus, { label: string; className: st
   "not-started": { label: "Queued", className: "bg-[rgba(100,116,139,.1)] text-fo-muted border-0" },
 };
 
+import type { AgentId, AgentOutput } from "@/lib/types";
+
+const MOCK_HISTORY_PROJECTS: ProjectState[] = [
+  {
+    _id: "mock-fitcoach",
+    input: {
+      startupName: "FitCoach AI",
+      idea: "AI-powered fitness coach for busy professionals",
+      industry: "Health & Fitness",
+      targetAudience: "Busy professionals aged 25-45",
+    },
+    overallStatus: "completed",
+    agents: {} as Record<AgentId, AgentOutput>,
+    createdAt: "2026-06-18T10:00:00.000Z",
+    updatedAt: "2026-06-18T10:00:00.000Z",
+  },
+  {
+    _id: "mock-saasrocket",
+    input: {
+      startupName: "SaaS Rocket",
+      idea: "No-code boilerplate generator for Next.js applications",
+      industry: "Developer Tools",
+      targetAudience: "Indie hackers and startup founders",
+    },
+    overallStatus: "completed",
+    agents: {} as Record<AgentId, AgentOutput>,
+    createdAt: "2026-06-17T15:30:00.000Z",
+    updatedAt: "2026-06-17T15:30:00.000Z",
+  },
+  {
+    _id: "mock-eduquest",
+    input: {
+      startupName: "EduQuest AI",
+      idea: "Gamified learning path generator for K-12 students",
+      industry: "Education",
+      targetAudience: "K-12 students and parents",
+    },
+    overallStatus: "completed",
+    agents: {} as Record<AgentId, AgentOutput>,
+    createdAt: "2026-06-16T09:15:00.000Z",
+    updatedAt: "2026-06-16T09:15:00.000Z",
+  },
+];
+
 export default function HistoryPage() {
   const router = useRouter();
   const loadProject = useProjectStore((s) => s.loadProject);
@@ -49,11 +93,11 @@ export default function HistoryPage() {
         const data = await response.json();
         setProjects(data);
       } catch (error) {
-        console.error("Failed to load project history:", error);
+        console.warn("Failed to load project history from database, loading offline fallbacks:", error);
+        setProjects(MOCK_HISTORY_PROJECTS);
         toast({
-          variant: "destructive",
-          title: "Failed to Load History",
-          description: "Could not retrieve your past runs from the database.",
+          title: "Database Offline",
+          description: "Could not connect to the database. Loaded local history data for testing.",
         });
       } finally {
         setLoading(false);
@@ -67,6 +111,49 @@ export default function HistoryPage() {
       title: "Loading Workspace",
       description: "Fetching project data...",
     });
+
+    if (id.startsWith("mock-")) {
+      const mockProj = MOCK_HISTORY_PROJECTS.find((p) => p._id === id);
+      if (mockProj) {
+        // Load static template mock data customized to the startup details
+        const { MOCK_PROJECT } = await import("@/lib/mock-data");
+        const startupName = mockProj.input.startupName;
+        
+        // Deep copy the mock agents
+        const customizedAgents = JSON.parse(JSON.stringify(MOCK_PROJECT.agents));
+        
+        // Customize text for all agents to match the mock project name
+        Object.keys(customizedAgents).forEach((agentId) => {
+          const agent = customizedAgents[agentId as AgentId];
+          if (agent) {
+            agent.title = agent.title
+              .replace(/FitCoach AI/g, startupName)
+              .replace(/Fitness AI/g, startupName);
+            if (agent.sections) {
+              agent.sections = agent.sections.map((sec: any) => ({
+                ...sec,
+                content: sec.content
+                  .replace(/FitCoach AI/g, startupName)
+                  .replace(/fitness coach/g, startupName.toLowerCase()),
+              }));
+            }
+          }
+        });
+
+        const projectDetails: ProjectState = {
+          ...mockProj,
+          agents: customizedAgents,
+        };
+
+        loadProject(projectDetails);
+        toast({
+          title: "Workspace Loaded",
+          description: `Successfully loaded ${mockProj.input.startupName} (Offline Mode).`,
+        });
+        router.push("/dashboard");
+        return;
+      }
+    }
 
     try {
       const response = await fetch(`/api/projects?id=${id}`);

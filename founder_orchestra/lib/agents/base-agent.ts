@@ -101,6 +101,7 @@ export async function runAgent(
     const model = new ChatGoogleGenerativeAI({
       model: config.model,
       apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+      maxRetries: 5,
     });
 
     const structuredModel = model.withStructuredOutput(agentOutputSchema);
@@ -156,6 +157,7 @@ export async function runAgentWithTools(
     const model = new ChatGoogleGenerativeAI({
       model: config.model,
       apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+      maxRetries: 5,
     });
 
     const tools = [
@@ -189,6 +191,7 @@ export async function runAgentWithTools(
     const formatter = new ChatGoogleGenerativeAI({
       model: config.model,
       apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+      maxRetries: 5,
     });
 
     const structuredFormatter = formatter.withStructuredOutput(agentOutputSchema);

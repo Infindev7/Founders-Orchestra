@@ -15,7 +15,6 @@ import { useState } from "react";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Topbar } from "@/components/dashboard/topbar";
 import { PdfExportModal } from "@/components/dashboard/pdf-export-modal";
-import { Toaster } from "@/components/ui/toaster";
 import { useProjectStore } from "@/lib/store/project-store";
 
 export default function DashboardLayout({
@@ -44,7 +43,6 @@ export default function DashboardLayout({
         </div>
       </main>
       <PdfExportModal open={pdfModalOpen} onOpenChange={setPdfModalOpen} />
-      <Toaster />
     </div>
   );
 }

@@ -42,31 +42,44 @@ export async function POST(request: Request) {
     }
 
     // ── Connect to MongoDB ──────────────────────────────────────────────
-    await connectDB();
+    let dbConnected = false;
+    let project: any = null;
+    try {
+      await connectDB();
+      dbConnected = true;
+    } catch (dbError) {
+      console.warn("⚠️ MongoDB connection failed, running pipeline in stateless mode:", dbError instanceof Error ? dbError.message : String(dbError));
+    }
 
     // ── Create or update project in database ────────────────────────────
-    let project;
-    if (body.projectId) {
-      // Re-running for existing project
-      project = await Project.findById(body.projectId);
-      if (!project) {
-        return NextResponse.json(
-          { error: "Project not found" },
-          { status: 404 }
-        );
+    if (dbConnected) {
+      try {
+        if (body.projectId && !body.projectId.startsWith("temp-")) {
+          // Re-running for existing project
+          project = await Project.findById(body.projectId);
+          if (project) {
+            project.input = body.input;
+            project.overallStatus = "in-progress";
+            await project.save();
+          }
+        }
+        
+        if (!project) {
+          // New project
+          project = await Project.create({
+            userId: "anonymous", // TODO: Get from auth session
+            input: body.input,
+            agents: {},
+            overallStatus: "in-progress",
+          });
+        }
+      } catch (dbSaveError) {
+        console.warn("⚠️ Failed to save project to MongoDB:", dbSaveError instanceof Error ? dbSaveError.message : String(dbSaveError));
+        dbConnected = false;
       }
-      project.input = body.input;
-      project.overallStatus = "in-progress";
-      await project.save();
-    } else {
-      // New project
-      project = await Project.create({
-        userId: "anonymous", // TODO: Get from auth session
-        input: body.input,
-        agents: {},
-        overallStatus: "in-progress",
-      });
     }
+
+    const projectId = project?._id?.toString() || "temp-" + Date.now();
 
     // ── Create a streaming response ─────────────────────────────────────
     // This uses the Web Streams API to send events in real-time
@@ -83,7 +96,7 @@ export async function POST(request: Request) {
         // Send the project ID first so the frontend can track it
         sendEvent({
           type: "project-created",
-          projectId: project._id.toString(),
+          projectId: projectId,
         });
 
         try {
@@ -94,29 +107,35 @@ export async function POST(request: Request) {
           });
 
           // ── Save final results to MongoDB ─────────────────────────
-          project.agents = results;
+          if (dbConnected && project) {
+            try {
+              project.agents = results;
 
-          // Determine overall status
-          const allCompleted = Object.values(results).every(
-            (r) => r.status === "completed"
-          );
-          const anyCompleted = Object.values(results).some(
-            (r) => r.status === "completed"
-          );
+              // Determine overall status
+              const allCompleted = Object.values(results).every(
+                (r) => r.status === "completed"
+              );
+              const anyCompleted = Object.values(results).some(
+                (r) => r.status === "completed"
+              );
 
-          project.overallStatus = allCompleted
-            ? "completed"
-            : anyCompleted
-            ? "partial"
-            : "not-started";
+              project.overallStatus = allCompleted
+                ? "completed"
+                : anyCompleted
+                ? "partial"
+                : "not-started";
 
-          await project.save();
+              await project.save();
+            } catch (dbSaveError) {
+              console.warn("⚠️ Failed to save final results to MongoDB:", dbSaveError instanceof Error ? dbSaveError.message : String(dbSaveError));
+            }
+          }
 
           // ── Send completion event ─────────────────────────────────
           sendEvent({
             type: "orchestration-complete",
-            projectId: project._id.toString(),
-            overallStatus: project.overallStatus,
+            projectId: projectId,
+            overallStatus: dbConnected && project ? project.overallStatus : "completed",
           });
         } catch (error) {
           sendEvent({

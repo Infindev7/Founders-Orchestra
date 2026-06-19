@@ -85,11 +85,6 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!input) {
       loadMockData();
-    } else {
-      toast({
-        title: "Welcome Back",
-        description: "Your startup workspace is loaded.",
-      });
     }
   }, [input, loadMockData]);
 
@@ -461,24 +456,56 @@ function getTrendListData(agentOutput: any): any[] | undefined {
   let rank = 1;
   lines.forEach((line: string) => {
     const trimmed = line.trim();
-    const match = trimmed.match(/^[-•*\d.)\s]+(?:\*\*(.*?)\*\*|([^*:]+))\s*[:—-]\s*(.*)/);
-    if (match) {
-      const name = (match[1] || match[2] || "").trim();
-      const desc = match[3].trim();
-      if (name && desc) {
-        const direction = desc.toLowerCase().includes("down") || desc.toLowerCase().includes("decrease") || desc.toLowerCase().includes("drop") ? "down" : "up";
-        const color = rank === 1 ? "#6366F1" : rank === 2 ? "#38BDF8" : rank === 3 ? "#10B981" : "#F43F5E";
-        trends.push({
-          rank: String(rank).padStart(2, '0'),
-          name,
-          subtitle: desc.substring(0, 70) + (desc.length > 70 ? "..." : ""),
-          sparkData: direction === "up" ? [30 + Math.random()*20, 40 + Math.random()*20, 50 + Math.random()*20, 70 + Math.random()*20, 80 + Math.random()*20, 100] : [80 + Math.random()*20, 70 + Math.random()*20, 60 + Math.random()*20, 50, 45, 40],
-          sparkColor: color,
-          momentum: direction === "up" ? `+${Math.round(50 + Math.random()*150)}%` : `-${Math.round(10 + Math.random()*40)}%`,
-          direction,
-        });
-        rank++;
+    if (!trimmed) return;
+
+    // Clean up rank prefix, e.g. "1. ", "- "
+    let cleanLine = trimmed.replace(/^[-•*\d.)\s]+/, "").trim();
+    
+    // Extract momentum if present, e.g. (+187%) or (-28%)
+    let momentum = "";
+    let direction: "up" | "down" = "up";
+    const momentumMatch = cleanLine.match(/\(([-+−\d%]+)\)/);
+    if (momentumMatch) {
+      momentum = momentumMatch[1];
+      cleanLine = cleanLine.replace(momentumMatch[0], "").trim();
+      if (momentum.startsWith("-") || momentum.startsWith("−") || momentum.toLowerCase().includes("down")) {
+        direction = "down";
+      } else {
+        direction = "up";
       }
+    }
+
+    // Split title and description using a colon or em-dash/double-dash.
+    // Avoid splitting on a single hyphen so we don't break words like "Micro-workout"
+    let name = cleanLine;
+    let subtitle = "";
+    const splitMatch = cleanLine.match(/^([^*:—]+)(?::|—|--)\s*(.*)/);
+    if (splitMatch) {
+      name = splitMatch[1].replace(/\*\*/g, "").trim();
+      subtitle = splitMatch[2].replace(/\*\*/g, "").trim();
+    } else {
+      name = name.replace(/\*\*/g, "").trim();
+    }
+
+    if (name) {
+      const color = rank === 1 ? "#6366F1" : rank === 2 ? "#38BDF8" : rank === 3 ? "#10B981" : "#F43F5E";
+      
+      // Generate momentum if not extracted
+      if (!momentum) {
+        direction = name.toLowerCase().includes("fatigue") || name.toLowerCase().includes("churn") || name.toLowerCase().includes("drop") ? "down" : "up";
+        momentum = direction === "up" ? `+${Math.round(50 + Math.random()*150)}%` : `-${Math.round(10 + Math.random()*40)}%`;
+      }
+
+      trends.push({
+        rank: String(rank).padStart(2, '0'),
+        name,
+        subtitle: subtitle || "Emerging growth opportunity",
+        sparkData: direction === "up" ? [30 + Math.random()*20, 40 + Math.random()*20, 50 + Math.random()*20, 70 + Math.random()*20, 80 + Math.random()*20, 100] : [80 + Math.random()*20, 70 + Math.random()*20, 60 + Math.random()*20, 50, 45, 40],
+        sparkColor: color,
+        momentum,
+        direction,
+      });
+      rank++;
     }
   });
 
@@ -572,10 +599,19 @@ function getRoadmapData(agentOutput: any): any[] | undefined {
     const isPhaseHeader = trimmed.match(/^(?:Phase\s*\d+|Q\d+|\*\*Phase|\*\*Q\d+)/i) || trimmed.toLowerCase().includes("mvp") || trimmed.toLowerCase().includes("growth") || trimmed.toLowerCase().includes("scale");
     if (isPhaseHeader && !trimmed.startsWith("-") && !trimmed.startsWith("*")) {
       if (currentPhase) {
+        // Fallback to extract inline features in parentheses if no items were added
+        if (currentPhase.items.length === 0) {
+          const parenMatch = currentPhase.title.match(/(.*)\(([^)]+)\)/);
+          if (parenMatch) {
+            currentPhase.title = parenMatch[1].trim();
+            currentPhase.items = parenMatch[2].split(",").map((s: string) => s.trim());
+          }
+        }
         phases.push(currentPhase);
       }
-      const quarter = phases.length === 0 ? "q1" : phases.length === 1 ? "q2" : "q3";
-      const label = phases.length === 0 ? "Q1 — MVP" : phases.length === 1 ? "Q2 — Growth" : "Q3 — Scale";
+      const idx = phases.length;
+      const quarter = idx === 0 ? "q1" : idx === 1 ? "q2" : "q3";
+      const label = idx === 0 ? "Q1 — MVP" : idx === 1 ? "Q2 — Growth" : idx === 2 ? "Q3 — Scale" : `Q${idx + 1} — Future`;
       currentPhase = {
         label,
         title: trimmed.replace(/[#*`]/g, "").replace(/^Phase\s*\d+[:\s-]*/i, "").trim(),
@@ -588,6 +624,13 @@ function getRoadmapData(agentOutput: any): any[] | undefined {
   });
 
   if (currentPhase) {
+    if (currentPhase.items.length === 0) {
+      const parenMatch = currentPhase.title.match(/(.*)\(([^)]+)\)/);
+      if (parenMatch) {
+        currentPhase.title = parenMatch[1].trim();
+        currentPhase.items = parenMatch[2].split(",").map((s: string) => s.trim());
+      }
+    }
     phases.push(currentPhase);
   }
 
@@ -625,12 +668,15 @@ function getSchemaGridData(agentOutput: any): any[] | undefined {
         const colType = colMatch[2].split(",")[0].trim();
         const isPK = colMatch[2].toLowerCase().includes("pk") || colMatch[2].toLowerCase().includes("primary");
         const isFK = colMatch[2].toLowerCase().includes("fk") || colMatch[2].toLowerCase().includes("foreign");
-        currentTable.columns.push({
-          name: colName,
-          type: colType,
-          isKey: isPK || isFK,
-          badge: isPK ? "PK" : isFK ? "FK" : undefined,
-        });
+        const exists = currentTable.columns.some((c: any) => c.name === colName);
+        if (!exists) {
+          currentTable.columns.push({
+            name: colName,
+            type: colType,
+            isKey: isPK || isFK,
+            badge: isPK ? "PK" : isFK ? "FK" : undefined,
+          });
+        }
       }
     }
   });

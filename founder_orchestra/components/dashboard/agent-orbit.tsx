@@ -125,7 +125,7 @@ export function AgentOrbit() {
       </Card>
 
       {/* ── Agent List ───────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-2 flex-1">
+      <div className="flex flex-col gap-2 flex-1 min-w-0">
         {ALL_AGENT_IDS.map((agentId) => (
           <AgentRow key={agentId} agentId={agentId} />
         ))}

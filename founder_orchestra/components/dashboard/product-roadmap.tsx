@@ -71,11 +71,11 @@ export function ProductRoadmap({ phases = DEFAULT_PHASES }: ProductRoadmapProps)
           animate="show"
           className="grid grid-cols-1 md:grid-cols-3 gap-3"
         >
-          {phases.map((phase) => {
-            const style = QUARTER_STYLES[phase.quarter];
+          {phases.map((phase, idx) => {
+            const style = QUARTER_STYLES[phase.quarter] || QUARTER_STYLES.q3;
             return (
               <motion.div
-                key={phase.label}
+                key={`${phase.label}-${idx}`}
                 variants={columnVariants}
                 whileHover={{ y: -3, scale: 1.015 }}
                 transition={{ y: { duration: 0.15 }, scale: { duration: 0.15 } }}

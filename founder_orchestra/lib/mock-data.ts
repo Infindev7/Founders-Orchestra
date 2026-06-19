@@ -46,7 +46,7 @@ const MOCK_AGENTS: Record<AgentId, AgentOutput> = {
     sections: [
       { heading: "Market Sizing", content: "TAM: $42B global fitness app market by 2028\nSAM: $9.8B AI-driven fitness\nSOM: $490M busy professionals niche" },
       { heading: "Competitors", content: "Mapped 7 competitors: Whoop, Freeletics, Future, Nike Training Club, Peloton, Noom, Fitbod." },
-      { heading: "Trends", content: "1. AI Personalization (+187%)\n2. Wearable Integration (+134%)\n3. Micro-workout Content (+211%)\n4. Subscription Fatigue (-28%)" },
+      { heading: "Trends", content: "1. AI Personalization: Real-time adaptive workout plans (+187%)\n2. Wearable Integration: Apple Watch, Whoop, Oura Ring sync (+134%)\n3. Micro-workout Content: <15 min sessions for time-poor users (+211%)\n4. Subscription Fatigue: Users consolidating fitness apps (-28%)" },
     ],
     metadata: { tam: "$42B", competitorCount: "7", trendCount: "5" },
     startedAt: "2026-01-01T00:00:00Z",

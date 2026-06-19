@@ -76,9 +76,9 @@ export function SchemaGrid({ tables = DEFAULT_TABLES }: SchemaGridProps) {
                 {table.name}
               </div>
               {/* Columns */}
-              {table.columns.map((col) => (
+              {table.columns.map((col, colIdx) => (
                 <div
-                  key={col.name}
+                  key={`${col.name}-${colIdx}`}
                   className="flex items-center gap-2 px-3 py-1.5 border-t border-[rgba(255,255,255,.04)] font-mono text-[11px] hover:bg-[rgba(255,255,255,.03)]"
                 >
                   {/* Key icon */}

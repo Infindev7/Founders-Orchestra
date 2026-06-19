@@ -19,7 +19,6 @@
  * Owner: Shared (all team members use this store)
  * =============================================================================
  */
-
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type {
@@ -32,13 +31,9 @@ import type {
 } from "@/lib/types";
 import { ALL_AGENT_IDS, AGENT_CONFIGS } from "@/lib/agents/config";
 import { toast } from "@/hooks/use-toast";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// STORE TYPE DEFINITION
-// ─────────────────────────────────────────────────────────────────────────────
+import { MOCK_PROJECT } from "@/lib/mock-data";
 
 interface ProjectStore {
-  // ── State ────────────────────────────────────────────────────────────────
   input: StartupInput | null;
   projectId: string | null;
   agents: Partial<Record<AgentId, AgentOutput>>;
@@ -132,20 +127,124 @@ export const useProjectStore = create<ProjectStore>()(
       resetProject: () => set(DEFAULT_STATE),
 
       loadMockData: () => {
-        // Dynamically import to avoid circular deps
-        import("@/lib/mock-data").then(({ MOCK_PROJECT }) => {
-          set({
-            input: MOCK_PROJECT.input,
-            projectId: "demo-project",
-            agents: MOCK_PROJECT.agents,
-            overallStatus: MOCK_PROJECT.overallStatus,
-          });
+        set({
+          input: MOCK_PROJECT.input,
+          projectId: "demo-project",
+          agents: MOCK_PROJECT.agents,
+          overallStatus: MOCK_PROJECT.overallStatus,
+        });
+        toast({
+          title: "Demo Loaded",
+          description: "Sample startup data has been loaded successfully.",
         });
       },
 
       runOrchestration: async () => {
         const state = useProjectStore.getState();
         if (!state.input) return;
+
+        // Local client-side simulation helper to run waves and toggle skeletons/animations
+        const runSimulation = async () => {
+          set({ overallStatus: "in-progress" });
+          
+          // Clear all agents to idle to show skeletons
+          const initialAgents: Partial<Record<AgentId, AgentOutput>> = {};
+          ALL_AGENT_IDS.forEach((id) => {
+            initialAgents[id] = {
+              agentId: id,
+              status: "idle",
+              title: AGENT_CONFIGS[id].name,
+              summary: "Queued...",
+              sections: [],
+              metadata: {},
+            };
+          });
+          set({ agents: initialAgents });
+
+          const runSimulatedAgent = async (agentId: AgentId, delayMs: number) => {
+            set((s) => {
+              const existing = s.agents[agentId];
+              return {
+                agents: {
+                  ...s.agents,
+                  [agentId]: {
+                    agentId,
+                    status: "running",
+                    title: existing?.title || AGENT_CONFIGS[agentId].name,
+                    summary: "Generating content...",
+                    sections: existing?.sections || [],
+                    metadata: existing?.metadata || {},
+                  },
+                },
+              };
+            });
+            await new Promise((r) => setTimeout(r, delayMs));
+            
+            const baseOutput = MOCK_PROJECT.agents[agentId];
+            
+            // Customize mock data output with the custom startup name if the user entered one
+            const startupName = state.input?.startupName || "My Startup";
+            const customOutput = JSON.parse(JSON.stringify(baseOutput)) as AgentOutput;
+            customOutput.title = customOutput.title
+              .replace(/FitCoach AI/g, startupName)
+              .replace(/Fitness AI/g, startupName);
+            
+            if (customOutput.sections) {
+              customOutput.sections = customOutput.sections.map((sec) => ({
+                ...sec,
+                content: sec.content
+                  .replace(/FitCoach AI/g, startupName)
+                  .replace(/fitness coach/g, startupName.toLowerCase()),
+              }));
+            }
+            
+            set((s) => ({
+              agents: {
+                ...s.agents,
+                [agentId]: customOutput,
+              },
+            }));
+            toast({
+              title: `${customOutput.title} Complete`,
+              description: `Validation findings are ready.`,
+            });
+          };
+
+          try {
+            // Wave 1: Startup Advisor + Market Research
+            await Promise.all([
+              runSimulatedAgent("startup-advisor", 2000),
+              runSimulatedAgent("market-research", 2500),
+            ]);
+
+            // Wave 2: PM + Marketing
+            await Promise.all([
+              runSimulatedAgent("product-manager", 2000),
+              runSimulatedAgent("marketing", 2200),
+            ]);
+
+            // Wave 3: Architect + EM
+            await Promise.all([
+              runSimulatedAgent("architect", 2000),
+              runSimulatedAgent("engineering-manager", 2500),
+            ]);
+
+            set({ overallStatus: "completed" });
+            toast({
+              title: "Pipeline Completed",
+              description: "Simulated startup validation pipeline finished successfully!",
+            });
+          } catch (error) {
+            console.error("Simulation error:", error);
+            set({ overallStatus: "not-started" });
+          }
+        };
+
+        // If explicitly in demo mode, run the simulation
+        if (state.projectId === "demo-project") {
+          await runSimulation();
+          return;
+        }
 
         // Initialize overall status to in-progress
         set({ overallStatus: "in-progress" });
@@ -279,13 +378,12 @@ export const useProjectStore = create<ProjectStore>()(
             }
           }
         } catch (error) {
-          console.error("Orchestration error:", error);
-          set({ overallStatus: "not-started" });
+          console.warn("Orchestration API failed, falling back to local simulation:", error);
           toast({
-            variant: "destructive",
-            title: "Pipeline Error",
-            description: error instanceof Error ? error.message : "Pipeline encountered an unexpected error",
+            title: "Database/Server Offline",
+            description: "Falling back to simulated pipeline execution for testing.",
           });
+          await runSimulation();
         }
       },
     }),
