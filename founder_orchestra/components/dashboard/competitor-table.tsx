@@ -60,7 +60,7 @@ const rowVariants = {
       damping: 22,
     },
   },
-};
+} as const;
 
 const MotionTableBody = motion.create(TableBody);
 const MotionTableRow = motion.create(TableRow);

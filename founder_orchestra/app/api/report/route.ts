@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * =============================================================================
  * API ROUTE — /api/report
@@ -61,9 +62,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // ── Generate PDF ─────────────────────────────────────────────────────
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const documentElement = React.createElement(ReportDocument, {
+    const documentElement = (React.createElement(ReportDocument, {
       project: {
         _id: project._id?.toString(),
         input: project.input,
@@ -72,7 +71,7 @@ export async function POST(request: Request) {
         createdAt: project.createdAt?.toISOString?.() ?? "",
         updatedAt: project.updatedAt?.toISOString?.() ?? "",
       },
-    }) as any; // Cast required: @react-pdf/renderer types expect DocumentProps at top level
+    }) as any); // Cast required: @react-pdf/renderer types expect DocumentProps at top level
 
     const pdfBuffer = await renderToBuffer(documentElement);
 

@@ -54,7 +54,7 @@ const columnVariants = {
       damping: 18,
     },
   },
-};
+} as const;
 
 export function ProductRoadmap({ phases = DEFAULT_PHASES }: ProductRoadmapProps) {
   return (
