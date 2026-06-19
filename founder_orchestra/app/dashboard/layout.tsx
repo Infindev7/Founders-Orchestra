@@ -15,6 +15,7 @@ import { useState } from "react";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Topbar } from "@/components/dashboard/topbar";
 import { PdfExportModal } from "@/components/dashboard/pdf-export-modal";
+import { Toaster } from "@/components/ui/toaster";
 import { useProjectStore } from "@/lib/store/project-store";
 
 export default function DashboardLayout({
@@ -24,6 +25,7 @@ export default function DashboardLayout({
 }) {
   const pdfModalOpen = useProjectStore((s) => s.pdfModalOpen);
   const setPdfModalOpen = useProjectStore((s) => s.setPdfModalOpen);
+  const runOrchestration = useProjectStore((s) => s.runOrchestration);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -34,10 +36,7 @@ export default function DashboardLayout({
       <main className="ml-0 md:ml-[240px] flex-1 flex flex-col min-h-screen w-full transition-all duration-300">
         <Topbar
           onExportPdf={() => setPdfModalOpen(true)}
-          onRunAll={() => {
-            // TODO (Team Member B): Wire to orchestrate API
-            console.log("Run all agents clicked");
-          }}
+          onRunAll={runOrchestration}
           onMenuClick={() => setMobileOpen(true)}
         />
         <div className="flex-1 p-4 sm:p-7 sm:px-8">
@@ -45,6 +44,7 @@ export default function DashboardLayout({
         </div>
       </main>
       <PdfExportModal open={pdfModalOpen} onOpenChange={setPdfModalOpen} />
+      <Toaster />
     </div>
   );
 }

@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { useProjectStore, getAgentStatus } from "@/lib/store/project-store";
 import { ALL_AGENT_IDS } from "@/lib/agents/config";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Zap,
   LayoutDashboard,
@@ -28,14 +29,28 @@ import {
   GitBranch,
   Rocket,
   Megaphone,
+  History,
 } from "lucide-react";
 
+interface NavItem {
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  label: string;
+  sectionId: string;
+  path?: string;
+}
+
+interface NavSection {
+  label: string;
+  items: NavItem[];
+}
+
 // ── Navigation structure ────────────────────────────────────────────────────
-const NAV_SECTIONS = [
+const NAV_SECTIONS: NavSection[] = [
   {
     label: "Overview",
     items: [
-      { icon: LayoutDashboard, label: "Dashboard", sectionId: "orbit" },
+      { icon: LayoutDashboard, label: "Dashboard", sectionId: "orbit", path: "/dashboard" },
+      { icon: History, label: "History", sectionId: "history", path: "/dashboard/history" },
     ],
   },
   {
@@ -78,14 +93,29 @@ interface SidebarProps {
 }
 
 export function Sidebar({ open = false, onClose }: SidebarProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const agents = useProjectStore((s) => s.agents);
   const activeSection = useProjectStore((s) => s.activeSection);
   const setActiveSection = useProjectStore((s) => s.setActiveSection);
 
-  const handleNavClick = (sectionId: string) => {
+  const handleNavClick = (sectionId: string, path?: string) => {
     setActiveSection(sectionId);
-    const el = document.getElementById(sectionId);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+    if (path) {
+      router.push(path);
+    } else {
+      if (pathname !== "/dashboard") {
+        router.push("/dashboard");
+        // Scroll after a tiny timeout to let the DOM render
+        setTimeout(() => {
+          const el = document.getElementById(sectionId);
+          if (el) el.scrollIntoView({ behavior: "smooth" });
+        }, 150);
+      } else {
+        const el = document.getElementById(sectionId);
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }
+    }
   };
 
   return (
@@ -95,6 +125,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
         <SidebarContent
           agents={agents}
           activeSection={activeSection}
+          pathname={pathname || "/dashboard"}
           onNavClick={handleNavClick}
         />
       </aside>
@@ -122,8 +153,9 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               <SidebarContent
                 agents={agents}
                 activeSection={activeSection}
-                onNavClick={(secId) => {
-                  handleNavClick(secId);
+                pathname={pathname || "/dashboard"}
+                onNavClick={(secId, path) => {
+                  handleNavClick(secId, path);
                   onClose?.();
                 }}
               />
@@ -144,10 +176,11 @@ import type { AgentId, AgentOutput } from "@/lib/types";
 interface SidebarContentProps {
   agents: Partial<Record<AgentId, AgentOutput>>;
   activeSection: string;
-  onNavClick: (sectionId: string) => void;
+  pathname: string;
+  onNavClick: (sectionId: string, path?: string) => void;
 }
 
-function SidebarContent({ agents, activeSection, onNavClick }: SidebarContentProps) {
+function SidebarContent({ agents, activeSection, pathname, onNavClick }: SidebarContentProps) {
   return (
     <>
       {/* ── Logo ─────────────────────────────────────────────────────────── */}
@@ -168,13 +201,15 @@ function SidebarContent({ agents, activeSection, onNavClick }: SidebarContentPro
               {section.label}
             </div>
             {section.items.map((item) => {
-              const isActive = activeSection === item.sectionId;
+              const isActive = item.path
+                ? pathname === item.path
+                : pathname === "/dashboard" && activeSection === item.sectionId;
               return (
                 <button
                   key={item.label}
-                  onClick={() => onNavClick(item.sectionId)}
+                  onClick={() => onNavClick(item.sectionId, item.path)}
                   className={cn(
-                    "flex items-center gap-2.5 w-full rounded-lg px-2.5 py-2 text-[13.5px] font-medium transition-colors mb-0.5",
+                    "flex items-center gap-2.5 w-full rounded-lg px-2.5 py-2 text-[13.5px] font-medium transition-colors mb-0.5 cursor-pointer",
                     isActive
                       ? "bg-[rgba(99,102,241,.15)] text-fo-indigo"
                       : "text-fo-sub hover:bg-fo-surface2 hover:text-fo-text"

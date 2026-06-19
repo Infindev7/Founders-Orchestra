@@ -56,7 +56,7 @@ const itemVariants = {
       damping: 20,
     },
   },
-};
+} as const;
 
 export function UserStories({ stories = DEFAULT_STORIES }: UserStoriesProps) {
   return (

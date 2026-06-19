@@ -129,3 +129,22 @@
 /* ─── FounderOS Typography ─── */
 .font-display { font-family: var(--font-display); }
 .font-mono { font-family: var(--font-code); }
+
+/* ─── Radix Toast Viewport & Card Styles ─── */
+ol[data-radix-toast-viewport] {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  top: auto !important;
+  left: auto !important;
+  z-index: 999999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  width: 380px !important;
+  max-width: calc(100vw - 48px) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+  outline: none !important;
+}
