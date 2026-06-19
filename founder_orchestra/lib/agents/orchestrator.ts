@@ -29,8 +29,13 @@ import type { AgentId, AgentOutput, StartupInput } from "@/lib/types";
 // ─────────────────────────────────────────────────────────────────────────────
 
 type OnProgressCallback = (event: {
-  type: "agent-start" | "agent-complete" | "agent-error";
+  type:
+    | "agent-start"
+    | "agent-progress"
+    | "agent-complete"
+    | "agent-error";
   agentId: AgentId;
+  partialText?: string;
   output?: AgentOutput;
   error?: string;
 }) => void;
@@ -65,12 +70,24 @@ export async function orchestrate(
           ? await runAgentWithTools(
               agentConfig,
               input,
-              wave > 1 ? contextFromPreviousWaves : undefined
+              wave > 1 ? contextFromPreviousWaves : undefined,
+              (partialText) =>
+                onProgress?.({
+                  type: "agent-progress",
+                  agentId: agentConfig.id,
+                  partialText,
+                })
             )
           : await runAgent(
               agentConfig,
               input,
-              wave > 1 ? contextFromPreviousWaves : undefined
+              wave > 1 ? contextFromPreviousWaves : undefined,
+              (partialText) =>
+                onProgress?.({
+                  type: "agent-progress",
+                  agentId: agentConfig.id,
+                  partialText,
+                })
             );
 
         results[agentConfig.id] = output;

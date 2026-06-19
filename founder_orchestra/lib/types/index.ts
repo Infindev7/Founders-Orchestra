@@ -277,10 +277,18 @@ export interface OrchestrateRequest {
 
 /** Streamed response from the orchestration API */
 export interface OrchestrateEvent {
-  type: "agent-start" | "agent-complete" | "agent-error" | "orchestration-complete";
+  type:
+    | "agent-start"
+    | "agent-progress"
+    | "agent-complete"
+    | "agent-error"
+    | "orchestration-complete";
   agentId?: AgentId;
+  partialText?: string;
   data?: AgentOutput;
   error?: string;
+  projectId?: string;
+  overallStatus?: OrchestrationStatus;
   timestamp: string;
 }
 
