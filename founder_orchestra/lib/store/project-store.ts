@@ -45,6 +45,7 @@ interface ProjectStore {
   // ── Actions ──────────────────────────────────────────────────────────────
   setInput: (input: StartupInput) => void;
   setAgentOutput: (agentId: AgentId, output: AgentOutput) => void;
+  setAgentPartialText: (agentId: AgentId, partialText: string) => void;
   setAgentStatus: (agentId: AgentId, status: AgentStatus) => void;
   setOverallStatus: (status: OrchestrationStatus) => void;
   setActiveSection: (sectionId: string) => void;
@@ -81,6 +82,25 @@ export const useProjectStore = create<ProjectStore>()(
         set((state) => ({
           agents: { ...state.agents, [agentId]: output },
         })),
+
+      setAgentPartialText: (agentId, partialText) =>
+        set((state) => {
+          const existing = state.agents[agentId];
+          const base = existing ?? {
+            agentId,
+            status: "running" as AgentStatus,
+            title: "",
+            summary: "",
+            sections: [],
+            metadata: {},
+          };
+          return {
+            agents: {
+              ...state.agents,
+              [agentId]: { ...base, status: "running", latestReasoning: partialText },
+            },
+          };
+        }),
 
       setAgentStatus: (agentId, status) =>
         set((state) => {

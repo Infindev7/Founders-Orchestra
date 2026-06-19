@@ -26,11 +26,20 @@
  */
 
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { SystemMessage, HumanMessage } from "@langchain/core/messages";
+import { SystemMessage, HumanMessage, isAIMessage } from "@langchain/core/messages";
 import { TavilySearch } from "@langchain/tavily";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { z } from "zod";
 import type { AgentConfig, AgentOutput, StartupInput } from "@/lib/types";
+
+type AgentProgressCallback = (partialText: string) => void;
+
+function extractChunkText(chunk: any): string {
+  if (!chunk) return "";
+  if (typeof chunk.text === "string") return chunk.text;
+  if (typeof chunk.content === "string") return chunk.content;
+  return "";
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OUTPUT SCHEMA (Zod)
@@ -90,7 +99,8 @@ const agentOutputSchema = z.object({
 export async function runAgent(
   config: AgentConfig,
   input: StartupInput,
-  context?: string
+  context?: string,
+  onProgress?: AgentProgressCallback
 ): Promise<AgentOutput> {
   const startedAt = new Date().toISOString();
 
@@ -101,15 +111,27 @@ export async function runAgent(
     const model = new ChatGoogleGenerativeAI({
       model: config.model,
       apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+      streaming: true,
     });
 
     const structuredModel = model.withStructuredOutput(agentOutputSchema);
 
-    // ── Call the model ───────────────────────────────────────────────────
-    const result = await structuredModel.invoke([
+    // ── Call the model in streaming mode and aggregate chunks ─────────────
+    const stream = await structuredModel.stream([
       new SystemMessage(config.systemPrompt),
       new HumanMessage(userPrompt),
     ]);
+
+    let aggregatedText = "";
+    for await (const chunk of stream) {
+      const partial = extractChunkText(chunk);
+      if (partial) {
+        aggregatedText += partial;
+        onProgress?.(aggregatedText);
+      }
+    }
+
+    const result = await stream.app();
 
     return {
       agentId: config.id,
@@ -120,6 +142,7 @@ export async function runAgent(
       metadata: result.metadata,
       startedAt,
       completedAt: new Date().toISOString(),
+      latestReasoning: aggregatedText,
     };
   } catch (error) {
     console.error(`[Agent: ${config.name}] Error:`, error);
