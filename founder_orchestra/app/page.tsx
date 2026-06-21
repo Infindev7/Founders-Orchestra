@@ -172,6 +172,14 @@ export default function LandingPage() {
                 >
                   Load Demo
                 </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-border text-fo-sub hover:text-fo-text hover:border-fo-indigo"
+                  onClick={() => router.push("/dashboard")}
+                >
+                  Go to Dashboard
+                </Button>
               </div>
             </form>
           </CardContent>
