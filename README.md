@@ -15,6 +15,8 @@
 
 ![Dashboard](images/dashboard.png)
 
+<sub>Built by <strong>Team Vertex</strong></sub>
+
 </div>
 
 ---
@@ -488,7 +490,7 @@ Add `GROQ_API_KEY_3`, `GROQ_API_KEY_4` etc. to `.env.local` to expand the rotati
 
 ## Contributing
 
-This project was built as a team submission. Meet the team:
+This project was built by **Team Vertex**. Meet the team:
 
 | Name | Role | Responsibilities |
 |---|---|---|
