@@ -125,5 +125,6 @@ export const authOptions: NextAuthOptions = {
   },
 
   // ── Secret: Used to encrypt tokens ─────────────────────────────────────
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || "b6tr8b1681d6tr8bdt6hbtr8nd1yt6nn86dtrb6dt8yhb6dtr8bdtrbrt6b8rdhd85t46s5bet6tj8gfbd",
 };
+

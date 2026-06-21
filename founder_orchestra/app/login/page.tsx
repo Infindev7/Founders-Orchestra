@@ -13,6 +13,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const errorParam = searchParams.get("error");
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -71,7 +72,7 @@ function LoginForm() {
           title: "Access Granted",
           description: "Welcome back, Admin.",
         });
-        router.push("/");
+        router.push(callbackUrl);
         router.refresh();
       }
     } catch (err) {
